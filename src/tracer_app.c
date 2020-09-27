@@ -15,18 +15,21 @@ static struct {
     gboolean continuous;
     gboolean is_waiting;
     TraceResult trace_result;
+    GHashTable *stats_table;
 } app;
 
 void tracer_app_run(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
     app.child_proc = 0;
     app.is_waiting = FALSE;
+    app.stats_table = g_hash_table_new(g_direct_hash, NULL);
     tracer_gui_init();
     gtk_main();
 }
 
 void tracer_app_quit() {
     tracer_app_kill_child_proc();
+    g_hash_table_unref(app.stats_table);
     gtk_main_quit();
 }
 
@@ -39,7 +42,16 @@ void tracer_app_kill_child_proc() {
     }
 }
 
-static void tracer_app_report_syscall() {
+guint tracer_app_get_syscall_count(int64_t sysno) {
+    gpointer key = GINT_TO_POINTER(sysno);
+    return GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
+}
+
+static void tracer_app_log_syscall() {
+    gpointer key = GINT_TO_POINTER(app.trace_result.sysno);
+    guint n = GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
+    g_hash_table_insert(app.stats_table, key, GUINT_TO_POINTER(n + 1));
+
     tracer_gui_report_syscall(&app.trace_result);
 }
 
@@ -90,7 +102,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
             case PTRACE_SYSCALL_INFO_EXIT:
                 app.trace_result.has_retval = TRUE;
                 app.trace_result.retval = sc_info.exit.rval;
-                tracer_app_report_syscall(app);
+                tracer_app_log_syscall(app);
                 if (app.continuous) {
                     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
                     return G_SOURCE_CONTINUE;
@@ -104,7 +116,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
         }
     }
     if (WIFEXITED(status)) {
-        tracer_app_report_syscall(app);
+        tracer_app_log_syscall(app);
         app.is_waiting = FALSE;
         app.child_proc = 0;
         tracer_app_finish_trace();

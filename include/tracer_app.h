@@ -19,3 +19,5 @@ gboolean tracer_app_start_trace(gchar **args, gboolean continuous);
 void tracer_app_kill_child_proc();
 
 void tracer_app_trace_next();
+
+guint tracer_app_get_syscall_count(int64_t sysno);
