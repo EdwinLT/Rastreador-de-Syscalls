@@ -7,8 +7,8 @@ OBJS:=$(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
 DEPS:=$(OBJS:%.o=%.d)
 
 CC:=gcc
-LIBS:=-Iinclude/
-CFLAGS:=
+LIBS:=-Iinclude/ `pkg-config --cflags --libs gtk+-3.0`
+CFLAGS:=-rdynamic
 
 .PHONY: all run
 all: $(TARGET)
