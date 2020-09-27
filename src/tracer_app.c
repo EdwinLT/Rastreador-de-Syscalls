@@ -52,7 +52,7 @@ static void tracer_app_log_syscall() {
     guint n = GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
     g_hash_table_insert(app.stats_table, key, GUINT_TO_POINTER(n + 1));
 
-    tracer_gui_report_syscall(&app.trace_result);
+    tracer_gui_new_syscall(&app.trace_result);
 }
 
 static void tracer_app_finish_trace() {

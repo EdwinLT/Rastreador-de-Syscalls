@@ -209,6 +209,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="relief">none</property>
                     <property name="use_stock">True</property>
                     <signal name="clicked" handler="on_back_button_clicked" swapped="no"/>
                   </object>
@@ -312,7 +313,7 @@
                                 <property name="width_request">250</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label_xalign">0</property>
+                                <property name="label_xalign">0.5</property>
                                 <property name="label_yalign">0</property>
                                 <property name="shadow_type">none</property>
                                 <child>
@@ -381,9 +382,9 @@
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="margin_left">8</property>
                                     <property name="label" translatable="yes">&lt;big&gt;Bitácora&lt;/big&gt;</property>
                                     <property name="use_markup">True</property>
+                                    <property name="justify">center</property>
                                   </object>
                                 </child>
                               </object>
@@ -397,7 +398,7 @@
                                 <property name="width_request">250</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label_xalign">0</property>
+                                <property name="label_xalign">0.5</property>
                                 <property name="label_yalign">0</property>
                                 <property name="shadow_type">none</property>
                                 <child>
@@ -461,9 +462,9 @@
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="margin_left">8</property>
                                     <property name="label" translatable="yes">&lt;big&gt;Tabla acumulada&lt;/big&gt;</property>
                                     <property name="use_markup">True</property>
+                                    <property name="justify">center</property>
                                   </object>
                                 </child>
                               </object>
@@ -475,7 +476,7 @@
                           </object>
                           <packing>
                             <property name="name">tables_view</property>
-                            <property name="title" translatable="yes">Tablas</property>
+                            <property name="title" translatable="yes">Bitácora</property>
                           </packing>
                         </child>
                         <child>
@@ -509,7 +510,7 @@
                           </object>
                           <packing>
                             <property name="name">graph_view</property>
-                            <property name="title" translatable="yes">Gráfico de pastel</property>
+                            <property name="title" translatable="yes">Gráfico</property>
                             <property name="position">1</property>
                           </packing>
                         </child>

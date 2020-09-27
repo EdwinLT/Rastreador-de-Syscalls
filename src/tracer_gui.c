@@ -43,7 +43,7 @@ void tracer_gui_init() {
     gtk_window_present(gui.main_window);
 }
 
-void tracer_gui_report_syscall(TraceResult *trace) {
+void tracer_gui_new_syscall(TraceResult *trace) {
     GtkTreeIter iter;
     gtk_list_store_insert_with_values(gui.log_liststore, &iter, -1,
         0, gui.log_rows_counter++,
@@ -54,6 +54,8 @@ void tracer_gui_report_syscall(TraceResult *trace) {
     GtkTreePath *new_row_path = gtk_tree_model_get_path(GTK_TREE_MODEL(gui.log_liststore), &iter);
     gtk_tree_view_scroll_to_cell(gui.log_treeview, new_row_path, NULL, FALSE, 0.0, 0.0);
     gtk_tree_path_free(new_row_path);
+
+    gtk_widget_set_sensitive(GTK_WIDGET(gui.next_syscall_button), TRUE);
 }
 
 void tracer_gui_on_trace_finish() {
@@ -83,9 +85,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
             gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), TRUE);
             gtk_stack_set_visible_child_name(gui.process_stack, "tables_view");
             gtk_stack_set_visible_child_name(gui.main_stack, "process_view");
-            if (!continuous) {
-                gtk_widget_grab_focus(GTK_WIDGET(gui.next_syscall_button));
-            }
+            gtk_widget_grab_default(GTK_WIDGET(gui.next_syscall_button));
         }
 
         g_strfreev(argv);
@@ -99,6 +99,7 @@ void on_stop_button_clicked(GtkButton *btn, gpointer data) {
 
 void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {
     tracer_app_trace_next();
+    gtk_widget_set_sensitive(GTK_WIDGET(gui.next_syscall_button), FALSE);
 }
 
 void on_back_button_clicked(GtkButton *btn, gpointer data) {
