@@ -56,6 +56,11 @@ void tracer_gui_report_syscall(TraceResult *trace) {
     gtk_tree_path_free(new_row_path);
 }
 
+void tracer_gui_on_trace_finish() {
+    gtk_widget_set_sensitive(GTK_WIDGET(gui.back_button), TRUE);
+    gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), FALSE);
+}
+
 
 void on_main_window_destroy() {
     tracer_app_quit();
@@ -78,6 +83,9 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
             gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), TRUE);
             gtk_stack_set_visible_child_name(gui.process_stack, "tables_view");
             gtk_stack_set_visible_child_name(gui.main_stack, "process_view");
+            if (!continuous) {
+                gtk_widget_grab_focus(GTK_WIDGET(gui.next_syscall_button));
+            }
         }
 
         g_strfreev(argv);
@@ -85,13 +93,15 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
 }
 
 void on_stop_button_clicked(GtkButton *btn, gpointer data) {
-
+    tracer_app_kill_child_proc();
+    tracer_gui_on_trace_finish();
 }
 
 void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {
-
+    tracer_app_trace_next();
 }
 
 void on_back_button_clicked(GtkButton *btn, gpointer data) {
-
+    gtk_stack_set_visible_child_name(gui.main_stack, "start_page");
+    gtk_widget_grab_default(GTK_WIDGET(gui.start_button));
 }
