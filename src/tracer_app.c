@@ -43,6 +43,11 @@ static void tracer_app_report_syscall() {
     tracer_gui_report_syscall(&app.trace_result);
 }
 
+static void tracer_app_finish_trace() {
+    tracer_gui_on_trace_finish();
+}
+
+
 static pid_t start_tracee(const char *pathname, char *const *args) {
     pid_t child = fork();
 
@@ -102,6 +107,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
         tracer_app_report_syscall(app);
         app.is_waiting = FALSE;
         app.child_proc = 0;
+        tracer_app_finish_trace();
         return G_SOURCE_REMOVE;
     }
     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
