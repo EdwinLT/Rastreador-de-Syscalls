@@ -21,7 +21,7 @@ static struct {
 } gui;
 #define GUI_BIND_OBJECT(builder, class, obj) (gui.obj = class(gtk_builder_get_object(builder, #obj)))
 
-void tracer_gui_init() {
+void tracer_gui_init(void) {
     GtkBuilder *builder = gtk_builder_new_from_resource("/com/github/edwinlt/Rastreador/window.glade");
     gtk_builder_connect_signals(builder, NULL);
 
@@ -58,13 +58,13 @@ void tracer_gui_new_syscall(TraceResult *trace) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui.next_syscall_button), TRUE);
 }
 
-void tracer_gui_on_trace_finish() {
+void tracer_gui_on_trace_finish(void) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui.back_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), FALSE);
 }
 
 
-void on_main_window_destroy() {
+void on_main_window_destroy(void) {
     tracer_app_quit();
 }
 

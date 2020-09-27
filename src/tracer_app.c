@@ -27,13 +27,13 @@ void tracer_app_run(int argc, char *argv[]) {
     gtk_main();
 }
 
-void tracer_app_quit() {
+void tracer_app_quit(void) {
     tracer_app_kill_child_proc();
     g_hash_table_unref(app.stats_table);
     gtk_main_quit();
 }
 
-void tracer_app_kill_child_proc() {
+void tracer_app_kill_child_proc(void) {
     if (app.child_proc > 0) {
         kill(app.child_proc, SIGKILL);
         waitpid(app.child_proc, NULL, 0);
@@ -47,7 +47,7 @@ guint tracer_app_get_syscall_count(int64_t sysno) {
     return GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
 }
 
-static void tracer_app_log_syscall() {
+static void tracer_app_log_syscall(void) {
     gpointer key = GINT_TO_POINTER(app.trace_result.sysno);
     guint n = GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
     g_hash_table_insert(app.stats_table, key, GUINT_TO_POINTER(n + 1));
@@ -55,7 +55,7 @@ static void tracer_app_log_syscall() {
     tracer_gui_new_syscall(&app.trace_result);
 }
 
-static void tracer_app_finish_trace() {
+static void tracer_app_finish_trace(void) {
     tracer_gui_on_trace_finish();
 }
 
@@ -102,7 +102,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
             case PTRACE_SYSCALL_INFO_EXIT:
                 app.trace_result.has_retval = TRUE;
                 app.trace_result.retval = sc_info.exit.rval;
-                tracer_app_log_syscall(app);
+                tracer_app_log_syscall();
                 if (app.continuous) {
                     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
                     return G_SOURCE_CONTINUE;
@@ -116,7 +116,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
         }
     }
     if (WIFEXITED(status)) {
-        tracer_app_log_syscall(app);
+        tracer_app_log_syscall();
         app.is_waiting = FALSE;
         app.child_proc = 0;
         tracer_app_finish_trace();
@@ -140,7 +140,7 @@ gboolean tracer_app_start_trace(gchar **args, gboolean continuous) {
     } else return FALSE;
 }
 
-void tracer_app_trace_next() {
+void tracer_app_trace_next(void) {
     if (app.child_proc > 0 && !app.is_waiting) {
         ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
         g_idle_add(wait_syscall_source_func, NULL);
