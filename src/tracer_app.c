@@ -40,7 +40,7 @@ void tracer_app_kill_child_proc() {
 }
 
 static void tracer_app_report_syscall() {
-    printf("syscall(%ld)\n", app.trace_result.sysno);
+    tracer_gui_report_syscall(&app.trace_result);
 }
 
 static pid_t start_tracee(const char *pathname, char *const *args) {

@@ -1,5 +1,5 @@
 #include "tracer_gui.h"
-#include "tracer_app.h"
+#include "syscall_names.h"
 
 #include <gtk/gtk.h>
 
@@ -43,6 +43,19 @@ void tracer_gui_init() {
     gtk_window_present(gui.main_window);
 }
 
+void tracer_gui_report_syscall(TraceResult *trace) {
+    GtkTreeIter iter;
+    gtk_list_store_insert_with_values(gui.log_liststore, &iter, -1,
+        0, gui.log_rows_counter++,
+        1, trace->sysno,
+        2, syscall_name(trace->sysno),
+        -1
+    );
+    GtkTreePath *new_row_path = gtk_tree_model_get_path(GTK_TREE_MODEL(gui.log_liststore), &iter);
+    gtk_tree_view_scroll_to_cell(gui.log_treeview, new_row_path, NULL, FALSE, 0.0, 0.0);
+    gtk_tree_path_free(new_row_path);
+}
+
 
 void on_main_window_destroy() {
     tracer_app_quit();
@@ -57,7 +70,14 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
         gboolean continuous = (g_strcmp0(mode_id, "CONTINUOUS") == 0);
 
         if (tracer_app_start_trace(argv, continuous)) {
-            
+            gui.log_rows_counter = 0UL;
+            gtk_list_store_clear(gui.log_liststore);
+            gtk_list_store_clear(gui.stats_liststore);
+            gtk_widget_set_visible(GTK_WIDGET(gui.next_syscall_button), !continuous);
+            gtk_widget_set_sensitive(GTK_WIDGET(gui.back_button), FALSE);
+            gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), TRUE);
+            gtk_stack_set_visible_child_name(gui.process_stack, "tables_view");
+            gtk_stack_set_visible_child_name(gui.main_stack, "process_view");
         }
 
         g_strfreev(argv);
