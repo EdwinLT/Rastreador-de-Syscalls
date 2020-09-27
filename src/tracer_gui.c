@@ -45,11 +45,23 @@ void tracer_gui_init() {
 
 
 void on_main_window_destroy() {
-    gtk_main_quit();
+    tracer_app_quit();
 }
 
 void on_start_button_clicked(GtkButton *btn, gpointer data) {
+    const gchar *cmd = gtk_entry_get_text(gui.command_entry);
+    gint argc; gchar **argv;
 
+    if (g_shell_parse_argv(cmd, &argc, &argv, NULL)) {
+        const char *mode_id = gtk_combo_box_get_active_id(gui.mode_combobox);
+        gboolean continuous = (g_strcmp0(mode_id, "CONTINUOUS") == 0);
+
+        if (tracer_app_start_trace(argv, continuous)) {
+            
+        }
+
+        g_strfreev(argv);
+    }
 }
 
 void on_stop_button_clicked(GtkButton *btn, gpointer data) {
