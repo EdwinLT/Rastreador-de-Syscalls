@@ -1,5 +1,6 @@
 #include "tracer_gui.h"
 #include "syscall_names.h"
+#include "colors.h"
 
 #include <math.h>
 #include <gtk/gtk.h>
