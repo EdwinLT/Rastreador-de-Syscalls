@@ -2,7 +2,14 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkListStore" id="legend_liststore"/>
+  <object class="GtkListStore" id="legend_liststore">
+    <columns>
+      <!-- column-name Label -->
+      <column type="gchararray"/>
+      <!-- column-name Color -->
+      <column type="GdkRGBA"/>
+    </columns>
+  </object>
   <object class="GtkListStore" id="log_liststore">
     <columns>
       <!-- column-name Index -->
@@ -485,38 +492,44 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
-                              <object class="GtkFrame">
+                              <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label_xalign">0.5</property>
-                                <property name="label_yalign">0</property>
-                                <property name="shadow_type">out</property>
+                                <property name="can_focus">True</property>
+                                <property name="hscrollbar_policy">never</property>
+                                <property name="shadow_type">in</property>
                                 <child>
-                                  <object class="GtkAlignment">
+                                  <object class="GtkTreeView" id="legend">
+                                    <property name="width_request">175</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="model">legend_liststore</property>
+                                    <child internal-child="selection">
+                                      <object class="GtkTreeSelection">
+                                        <property name="mode">none</property>
+                                      </object>
+                                    </child>
                                     <child>
-                                      <object class="GtkTreeView" id="legend">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="model">legend_liststore</property>
-                                        <child internal-child="selection">
-                                          <object class="GtkTreeSelection"/>
+                                      <object class="GtkTreeViewColumn">
+                                        <property name="spacing">4</property>
+                                        <property name="sizing">autosize</property>
+                                        <property name="min_width">128</property>
+                                        <property name="title" translatable="yes">Leyenda</property>
+                                        <child>
+                                          <object class="GtkCellRendererText">
+                                            <property name="width_chars">5</property>
+                                          </object>
+                                          <attributes>
+                                            <attribute name="background-rgba">1</attribute>
+                                          </attributes>
+                                        </child>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">0</attribute>
+                                          </attributes>
                                         </child>
                                       </object>
                                     </child>
-                                  </object>
-                                </child>
-                                <child type="label">
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="margin_left">4</property>
-                                    <property name="margin_right">4</property>
-                                    <property name="margin_top">4</property>
-                                    <property name="margin_bottom">4</property>
-                                    <property name="label" translatable="yes">Leyenda</property>
-                                    <property name="justify">center</property>
                                   </object>
                                 </child>
                               </object>
@@ -528,6 +541,8 @@
                             </child>
                             <child>
                               <object class="GtkAspectFrame">
+                                <property name="width_request">250</property>
+                                <property name="height_request">250</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="margin_left">4</property>
