@@ -106,3 +106,7 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
     gtk_stack_set_visible_child_name(gui.main_stack, "start_page");
     gtk_widget_grab_default(GTK_WIDGET(gui.start_button));
 }
+
+gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    return FALSE;
+}
