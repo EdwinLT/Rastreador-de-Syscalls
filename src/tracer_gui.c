@@ -99,7 +99,7 @@ static void tracer_gui_set_pie_chart_data(void) {
         gtk_tree_model_get(stats_model, &iter, 2, &count, -1);
         gdouble ratio = (gdouble) count / gui.syscall_counter;
 
-        GdkRGBA rgba = hsv_to_rgb(hues[i], 1.0, 1.0);
+        GdkRGBA rgba = hsv_to_rgb(hues[i], 0.62, 0.9);
         gtk_list_store_set(gui.stats_liststore, &iter,
             3, ratio, 4, &rgba,
             // Because of a bug in gtk, we can't properly retrieve the GdkRGBA
@@ -168,18 +168,11 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
 
 #define TAU (2 * M_PI)
 
-static void draw_pie_chart_slice(cairo_t *cr, double radius, double angle1, double angle2) {
-    cairo_save(cr);
+static void pie_chart_slice(cairo_t *cr, double radius, double angle1, double angle2) {
     cairo_move_to(cr, 0.0, 0.0);
     cairo_line_to(cr, radius*cos(angle1), radius*sin(angle1));
     cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
     cairo_line_to(cr, 0.0, 0.0);
-    cairo_fill(cr);
-    cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
-    cairo_line_to(cr, 0.0, 0.0);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_stroke(cr);
-    cairo_restore(cr);
 }
 
 static void draw_pie_chart(cairo_t *cr, double radius) {
@@ -195,8 +188,12 @@ static void draw_pie_chart(cairo_t *cr, double radius) {
         );
 
         double end_angle = angle + ratio * TAU;
+        pie_chart_slice(cr, radius, angle, end_angle);
         cairo_set_source_rgb(cr, r, g, b);
-        draw_pie_chart_slice(cr, radius, angle, end_angle);
+        cairo_fill(cr);
+        pie_chart_slice(cr, radius, angle, end_angle);
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_stroke(cr);
 
         angle = end_angle;
         valid = gtk_tree_model_iter_next(stats_model, &iter);
