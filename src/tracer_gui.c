@@ -1,6 +1,7 @@
 #include "tracer_gui.h"
 #include "syscall_names.h"
 
+#include <math.h>
 #include <gtk/gtk.h>
 
 static struct {
@@ -107,6 +108,31 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
     gtk_widget_grab_default(GTK_WIDGET(gui.start_button));
 }
 
+
+#define TAU (2 * M_PI)
+
+static void draw_pie_chart_segment(cairo_t *cr, double r, double angle1, double angle2) {
+    cairo_save(cr);
+    cairo_move_to(cr, 0.0, 0.0);
+    cairo_line_to(cr, r*cos(angle1), r*sin(angle1));
+    cairo_arc(cr, 0.0, 0.0, r, angle1, angle2);
+    cairo_line_to(cr, 0.0, 0.0);
+    cairo_fill(cr);
+    cairo_arc(cr, 0.0, 0.0, r, angle1, angle2);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+}
+
+static void draw_pie_chart(cairo_t *cr, double radius) {
+    
+}
+
 gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    double half_width  = (double)gtk_widget_get_allocated_width(widget)  * 0.5;
+    double half_height = (double)gtk_widget_get_allocated_height(widget) * 0.5;
+    double radius = fmin(half_width, half_height) * 0.9;
+    cairo_translate(cr, half_width, half_height);
+    draw_pie_chart(cr, radius);
     return FALSE;
 }

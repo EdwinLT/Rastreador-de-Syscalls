@@ -11,7 +11,7 @@ GRESOURCE_C:=$(BUILDDIR)/resources.c
 RESOURCES:=$(filter-out $(GRESOURCE_XML), $(wildcard resources/*))
 
 CC:=gcc
-LIBS:=-Iinclude/ `pkg-config --cflags --libs gtk+-3.0`
+LIBS:=-Iinclude/ `pkg-config --cflags --libs gtk+-3.0` -lm
 CFLAGS:=-rdynamic
 
 .PHONY: all run
