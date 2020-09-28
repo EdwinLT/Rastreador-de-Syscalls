@@ -21,3 +21,22 @@ GdkRGBA hsv_to_rgb(double h, double s, double v) {
             return (GdkRGBA) {red: 0, green: 0, blue: 0};
     }
 }
+
+double *create_n_hues(size_t n, gboolean shuffle) {
+    double *hues = malloc(n * sizeof(double));
+
+    for (size_t i = 0; i < n; i++) {
+        hues[i] = 360.0 * ((double) i / n);
+    }
+
+    if (shuffle && n > 2) {
+        size_t i, j;
+        for (i = 0, j = n/2; i < n/2; i += 2, j += 2) {
+            double buffer = hues[i];
+            hues[i] = hues[j];
+            hues[j] = buffer;
+        }
+    }
+
+    return hues;
+}

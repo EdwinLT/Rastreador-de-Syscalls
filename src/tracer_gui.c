@@ -112,21 +112,32 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
 
 #define TAU (2 * M_PI)
 
-static void draw_pie_chart_segment(cairo_t *cr, double r, double angle1, double angle2) {
+static void draw_pie_chart_slice(cairo_t *cr, double radius, double angle1, double angle2) {
     cairo_save(cr);
     cairo_move_to(cr, 0.0, 0.0);
-    cairo_line_to(cr, r*cos(angle1), r*sin(angle1));
-    cairo_arc(cr, 0.0, 0.0, r, angle1, angle2);
+    cairo_line_to(cr, radius*cos(angle1), radius*sin(angle1));
+    cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
     cairo_line_to(cr, 0.0, 0.0);
     cairo_fill(cr);
-    cairo_arc(cr, 0.0, 0.0, r, angle1, angle2);
+    cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_stroke(cr);
     cairo_restore(cr);
 }
 
 static void draw_pie_chart(cairo_t *cr, double radius) {
-    
+    int n = 255;
+    double *hues = create_n_hues(n, TRUE);
+    double delta = TAU / n;
+    cairo_set_line_width(cr, 1.0);
+    for (int i = 0; i < n; i++) {
+        double a1 = delta * i;
+        double a2 = delta * (i+1);
+        GdkRGBA color = hsv_to_rgb(hues[i], 1.0, 1.0);
+        cairo_set_source_rgb(cr, color.red, color.green, color.blue);
+        draw_pie_chart_slice(cr, radius, a1, a2);
+    }
+    free(hues);
 }
 
 gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
