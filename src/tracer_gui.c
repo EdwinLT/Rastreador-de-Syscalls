@@ -176,6 +176,7 @@ static void draw_pie_chart_slice(cairo_t *cr, double radius, double angle1, doub
     cairo_line_to(cr, 0.0, 0.0);
     cairo_fill(cr);
     cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
+    cairo_line_to(cr, 0.0, 0.0);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_stroke(cr);
     cairo_restore(cr);
