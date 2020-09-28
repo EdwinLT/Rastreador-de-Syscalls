@@ -2,14 +2,6 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkListStore" id="legend_liststore">
-    <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Color -->
-      <column type="GdkRGBA"/>
-    </columns>
-  </object>
   <object class="GtkListStore" id="log_liststore">
     <columns>
       <!-- column-name Index -->
@@ -46,6 +38,16 @@
       <column type="gchararray"/>
       <!-- column-name Count -->
       <column type="guint"/>
+      <!-- column-name Ratio -->
+      <column type="gdouble"/>
+      <!-- column-name RGBA -->
+      <column type="GdkRGBA"/>
+      <!-- column-name r -->
+      <column type="gdouble"/>
+      <!-- column-name g -->
+      <column type="gdouble"/>
+      <!-- column-name gdouble1 -->
+      <column type="gdouble"/>
     </columns>
   </object>
   <object class="GtkWindow" id="main_window">
@@ -502,7 +504,7 @@
                                     <property name="width_request">175</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="model">legend_liststore</property>
+                                    <property name="model">stats_liststore</property>
                                     <child internal-child="selection">
                                       <object class="GtkTreeSelection">
                                         <property name="mode">none</property>
@@ -516,16 +518,16 @@
                                         <property name="title" translatable="yes">Leyenda</property>
                                         <child>
                                           <object class="GtkCellRendererText">
-                                            <property name="width_chars">5</property>
+                                            <property name="text">██</property>
                                           </object>
                                           <attributes>
-                                            <attribute name="background-rgba">1</attribute>
+                                            <attribute name="foreground-rgba">4</attribute>
                                           </attributes>
                                         </child>
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">0</attribute>
+                                            <attribute name="text">1</attribute>
                                           </attributes>
                                         </child>
                                       </object>

@@ -19,7 +19,7 @@ static struct {
     GtkTreeView *stats_treeview;
     GtkListStore *log_liststore;
     GtkListStore *stats_liststore;
-    gulong log_rows_counter;
+    gulong syscall_counter;
 } gui;
 #define GUI_BIND_OBJECT(builder, class, obj) (gui.obj = class(gtk_builder_get_object(builder, #obj)))
 
@@ -27,17 +27,17 @@ void tracer_gui_init(void) {
     GtkBuilder *builder = gtk_builder_new_from_resource("/com/github/edwinlt/Rastreador/window.glade");
     gtk_builder_connect_signals(builder, NULL);
 
-    GUI_BIND_OBJECT(builder, GTK_WINDOW, main_window);
-    GUI_BIND_OBJECT(builder, GTK_STACK, main_stack);
-    GUI_BIND_OBJECT(builder, GTK_STACK, process_stack);
-    GUI_BIND_OBJECT(builder, GTK_ENTRY, command_entry);
-    GUI_BIND_OBJECT(builder, GTK_COMBO_BOX, mode_combobox);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON, start_button);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON, back_button);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON, next_syscall_button);
+    GUI_BIND_OBJECT(builder, GTK_WINDOW,     main_window);
+    GUI_BIND_OBJECT(builder, GTK_STACK,      main_stack);
+    GUI_BIND_OBJECT(builder, GTK_STACK,      process_stack);
+    GUI_BIND_OBJECT(builder, GTK_ENTRY,      command_entry);
+    GUI_BIND_OBJECT(builder, GTK_COMBO_BOX,  mode_combobox);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON,     start_button);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON,     back_button);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON,     next_syscall_button);
     GUI_BIND_OBJECT(builder, GTK_BUTTON_BOX, proc_control_box);
-    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW, log_treeview);
-    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW, stats_treeview);
+    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW,  log_treeview);
+    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW,  stats_treeview);
     GUI_BIND_OBJECT(builder, GTK_LIST_STORE, log_liststore);
     GUI_BIND_OBJECT(builder, GTK_LIST_STORE, stats_liststore);
 
@@ -51,7 +51,7 @@ void tracer_gui_new_syscall(TraceResult *trace) {
 
     // Update log
     gtk_list_store_insert_with_values(gui.log_liststore, &iter, -1,
-        0, gui.log_rows_counter++,
+        0, gui.syscall_counter++,
         1, trace->sysno,
         2, name,
         -1
@@ -86,9 +86,39 @@ void tracer_gui_new_syscall(TraceResult *trace) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui.next_syscall_button), TRUE);
 }
 
+static void tracer_gui_set_pie_chart_data(void) {
+    GtkTreeModel *stats_model = GTK_TREE_MODEL(gui.stats_liststore);
+    guint n = gtk_tree_model_iter_n_children(stats_model, NULL);
+    double *hues = create_n_hues(n, TRUE);
+
+    guint i = 0;
+    GtkTreeIter iter;
+    gboolean valid = gtk_tree_model_get_iter_first(stats_model, &iter);
+    while (valid) {
+        guint count;
+        gtk_tree_model_get(stats_model, &iter, 2, &count, -1);
+        gdouble ratio = (gdouble) count / gui.syscall_counter;
+
+        GdkRGBA rgba = hsv_to_rgb(hues[i], 1.0, 1.0);
+        gtk_list_store_set(gui.stats_liststore, &iter,
+            3, ratio, 4, &rgba,
+            // Because of a bug in gtk, we can't properly retrieve the GdkRGBA
+            // To get around this, we store the r, g, and b separately as well
+            5, rgba.red, 6, rgba.green, 7, rgba.blue,
+            -1
+        );
+
+        i++;
+        valid = gtk_tree_model_iter_next(stats_model, &iter);
+    }
+
+    free(hues);
+}
+
 void tracer_gui_on_trace_finish(void) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui.back_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), FALSE);
+    tracer_gui_set_pie_chart_data();
 }
 
 
@@ -105,7 +135,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
         gboolean continuous = (g_strcmp0(mode_id, "CONTINUOUS") == 0);
 
         if (tracer_app_start_trace(argv, continuous)) {
-            gui.log_rows_counter = 0UL;
+            gui.syscall_counter = 0UL;
             gtk_list_store_clear(gui.log_liststore);
             gtk_list_store_clear(gui.stats_liststore);
             gtk_widget_set_visible(GTK_WIDGET(gui.next_syscall_button), !continuous);
@@ -152,18 +182,24 @@ static void draw_pie_chart_slice(cairo_t *cr, double radius, double angle1, doub
 }
 
 static void draw_pie_chart(cairo_t *cr, double radius) {
-    int n = 255;
-    double *hues = create_n_hues(n, TRUE);
-    double delta = TAU / n;
-    cairo_set_line_width(cr, 1.0);
-    for (int i = 0; i < n; i++) {
-        double a1 = delta * i;
-        double a2 = delta * (i+1);
-        GdkRGBA color = hsv_to_rgb(hues[i], 1.0, 1.0);
-        cairo_set_source_rgb(cr, color.red, color.green, color.blue);
-        draw_pie_chart_slice(cr, radius, a1, a2);
+    double angle = 0.0;
+    GtkTreeModel *stats_model = GTK_TREE_MODEL(gui.stats_liststore);
+    GtkTreeIter iter;
+    gboolean valid = gtk_tree_model_get_iter_first(stats_model, &iter);
+    while (valid) {
+        gdouble ratio;
+        gdouble r, g, b;
+        gtk_tree_model_get(stats_model, &iter,
+            3, &ratio, 5, &r, 6, &g, 7, &b, -1
+        );
+
+        double end_angle = angle + ratio * TAU;
+        cairo_set_source_rgb(cr, r, g, b);
+        draw_pie_chart_slice(cr, radius, angle, end_angle);
+
+        angle = end_angle;
+        valid = gtk_tree_model_iter_next(stats_model, &iter);
     }
-    free(hues);
 }
 
 gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
@@ -171,6 +207,7 @@ gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer dat
     double half_height = (double)gtk_widget_get_allocated_height(widget) * 0.5;
     double radius = fmin(half_width, half_height) * 0.9;
     cairo_translate(cr, half_width, half_height);
+    cairo_set_line_width(cr, 1.0);
     draw_pie_chart(cr, radius);
     return FALSE;
 }

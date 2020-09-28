@@ -8,4 +8,4 @@
 // v: 0-1
 GdkRGBA hsv_to_rgb(double h, double s, double b);
 
-double *create_n_hues(size_t n, gboolean shuffle);
+double *create_n_hues(guint n, gboolean shuffle);
