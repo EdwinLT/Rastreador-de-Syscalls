@@ -15,21 +15,18 @@ static struct {
     gboolean continuous;
     gboolean is_waiting;
     TraceResult trace_result;
-    GHashTable *stats_table;
 } app;
 
 void tracer_app_run(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
     app.child_proc = 0;
     app.is_waiting = FALSE;
-    app.stats_table = g_hash_table_new(g_direct_hash, NULL);
     tracer_gui_init();
     gtk_main();
 }
 
 void tracer_app_quit(void) {
     tracer_app_kill_child_proc();
-    g_hash_table_unref(app.stats_table);
     gtk_main_quit();
 }
 
@@ -42,16 +39,7 @@ void tracer_app_kill_child_proc(void) {
     }
 }
 
-guint tracer_app_get_syscall_count(int64_t sysno) {
-    gpointer key = GINT_TO_POINTER(sysno);
-    return GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
-}
-
 static void tracer_app_log_syscall(void) {
-    gpointer key = GINT_TO_POINTER(app.trace_result.sysno);
-    guint n = GPOINTER_TO_UINT(g_hash_table_lookup(app.stats_table, key));
-    g_hash_table_insert(app.stats_table, key, GUINT_TO_POINTER(n + 1));
-
     tracer_gui_new_syscall(&app.trace_result);
 }
 

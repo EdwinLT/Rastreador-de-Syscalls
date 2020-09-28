@@ -46,16 +46,42 @@ void tracer_gui_init(void) {
 }
 
 void tracer_gui_new_syscall(TraceResult *trace) {
+    const gchar *name = (const gchar*) syscall_name(trace->sysno);
     GtkTreeIter iter;
+
+    // Update log
     gtk_list_store_insert_with_values(gui.log_liststore, &iter, -1,
         0, gui.log_rows_counter++,
         1, trace->sysno,
-        2, syscall_name(trace->sysno),
+        2, name,
         -1
     );
     GtkTreePath *new_row_path = gtk_tree_model_get_path(GTK_TREE_MODEL(gui.log_liststore), &iter);
     gtk_tree_view_scroll_to_cell(gui.log_treeview, new_row_path, NULL, FALSE, 0.0, 0.0);
     gtk_tree_path_free(new_row_path);
+
+    // Update stats table
+    gboolean not_in_table = TRUE;
+    GtkTreeModel *tm = GTK_TREE_MODEL(gui.stats_liststore);
+    gboolean valid = gtk_tree_model_get_iter_first(tm, &iter);
+    while (valid) {
+        glong sysno; guint count;
+        gtk_tree_model_get(tm, &iter, 0, &sysno, 2, &count, -1);
+        if (sysno == trace->sysno) {
+            gtk_list_store_set(gui.stats_liststore, &iter, 2, count + 1, -1);
+            not_in_table = FALSE;
+            break;
+        }
+        valid = gtk_tree_model_iter_next(tm, &iter);
+    }
+    if (not_in_table) {
+        gtk_list_store_insert_with_values(gui.stats_liststore, NULL, -1,
+            0, (glong) trace->sysno,
+            1, name,
+            2, (guint) 1U,
+            -1
+        );
+    }
 
     gtk_widget_set_sensitive(GTK_WIDGET(gui.next_syscall_button), TRUE);
 }
