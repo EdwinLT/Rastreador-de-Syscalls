@@ -1,4 +1,6 @@
 #include "tracer_gui.h"
+#include "tracer_app.h"
+
 #include "syscall_names.h"
 #include "colors.h"
 #include "columns.h"
@@ -26,7 +28,7 @@ static struct {
 } gui;
 #define GUI_BIND_OBJECT(builder, class, obj) (gui.obj = class(gtk_builder_get_object(builder, #obj)))
 
-void tracer_gui_init(void) {
+static void tracer_gui_init(void) {
     GtkBuilder *builder = gtk_builder_new_from_resource("/com/github/edwinlt/Rastreador/window.glade");
     gtk_builder_connect_signals(builder, NULL);
 
@@ -49,6 +51,13 @@ void tracer_gui_init(void) {
     g_object_unref(builder);
     gtk_window_present(gui.main_window);
 }
+
+void tracer_gui_launch(int argc, char **argv) {
+    gtk_init(NULL, NULL);
+    tracer_gui_init();
+    gtk_main();
+}
+
 
 void tracer_gui_log_syscall(TraceResult *trace) {
     const gchar *name = (const gchar*) syscall_name(trace->sysno);
@@ -135,6 +144,7 @@ void tracer_gui_on_trace_finish(void) {
 
 void on_main_window_destroy(void) {
     tracer_app_quit();
+    gtk_main_quit();
 }
 
 void on_start_button_clicked(GtkButton *btn, gpointer data) {

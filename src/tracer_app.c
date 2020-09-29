@@ -17,17 +17,13 @@ static struct {
     TraceResult trace_result;
 } app;
 
-void tracer_app_run(int argc, char *argv[]) {
-    gtk_init(&argc, &argv);
+void tracer_app_init(void) {
     app.child_proc = 0;
     app.is_waiting = FALSE;
-    tracer_gui_init();
-    gtk_main();
 }
 
 void tracer_app_quit(void) {
     tracer_app_kill_child_proc();
-    gtk_main_quit();
 }
 
 void tracer_app_kill_child_proc(void) {

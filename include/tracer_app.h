@@ -10,7 +10,7 @@ typedef struct TraceResult_t {
     int64_t retval;
 } TraceResult;
 
-void tracer_app_run(int argc, char *argv[]);
+void tracer_app_init(void);
 
 void tracer_app_quit(void);
 
