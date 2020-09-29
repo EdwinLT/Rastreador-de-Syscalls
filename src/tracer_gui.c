@@ -180,11 +180,11 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
 
 #define TAU (2 * M_PI)
 
-static void pie_chart_slice(cairo_t *cr, double radius, double angle1, double angle2) {
-    cairo_move_to(cr, 0.0, 0.0);
-    cairo_line_to(cr, radius*cos(angle1), radius*sin(angle1));
-    cairo_arc(cr, 0.0, 0.0, radius, angle1, angle2);
-    cairo_line_to(cr, 0.0, 0.0);
+static void pie_chart_slice(cairo_t *cr, double xc, double yc, 
+                            double r, double angle1, double angle2) {
+    cairo_move_to(cr, xc, yc);
+    cairo_arc(cr, xc, yc, r, angle1, angle2);
+    cairo_line_to(cr, xc, yc);
 }
 
 static void draw_pie_chart(cairo_t *cr, double radius) {
@@ -202,10 +202,9 @@ static void draw_pie_chart(cairo_t *cr, double radius) {
         );
 
         double end_angle = angle + proportion * TAU;
-        pie_chart_slice(cr, radius, angle, end_angle);
+        pie_chart_slice(cr, 0.0, 0.0, radius, angle, end_angle);
         cairo_set_source_rgb(cr, r, g, b);
-        cairo_fill(cr);
-        pie_chart_slice(cr, radius, angle, end_angle);
+        cairo_fill_preserve(cr);
         cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
         cairo_stroke(cr);
 
