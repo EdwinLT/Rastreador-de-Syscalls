@@ -4,6 +4,6 @@
 
 void tracer_gui_init(void);
 
-void tracer_gui_new_syscall(TraceResult *trace);
+void tracer_gui_log_syscall(TraceResult *trace);
 
 void tracer_gui_on_trace_finish(void);

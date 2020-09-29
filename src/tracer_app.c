@@ -40,7 +40,7 @@ void tracer_app_kill_child_proc(void) {
 }
 
 static void tracer_app_log_syscall(void) {
-    tracer_gui_new_syscall(&app.trace_result);
+    tracer_gui_log_syscall(&app.trace_result);
 }
 
 static void tracer_app_finish_trace(void) {

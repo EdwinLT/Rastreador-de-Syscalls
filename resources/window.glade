@@ -2,12 +2,30 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkListStore" id="chart_liststore">
+    <columns>
+      <!-- column-name Syscall number -->
+      <column type="gint64"/>
+      <!-- column-name Name -->
+      <column type="gchararray"/>
+      <!-- column-name Proportion -->
+      <column type="gdouble"/>
+      <!-- column-name RGBA -->
+      <column type="GdkRGBA"/>
+      <!-- column-name r -->
+      <column type="gdouble"/>
+      <!-- column-name g -->
+      <column type="gdouble"/>
+      <!-- column-name b -->
+      <column type="gdouble"/>
+    </columns>
+  </object>
   <object class="GtkListStore" id="log_liststore">
     <columns>
       <!-- column-name Index -->
       <column type="gulong"/>
-      <!-- column-name Code -->
-      <column type="glong"/>
+      <!-- column-name Syscall number -->
+      <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
     </columns>
@@ -32,22 +50,12 @@
   </object>
   <object class="GtkListStore" id="stats_liststore">
     <columns>
-      <!-- column-name Sysno. -->
-      <column type="glong"/>
+      <!-- column-name Syscall number -->
+      <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
       <!-- column-name Count -->
       <column type="guint"/>
-      <!-- column-name Ratio -->
-      <column type="gdouble"/>
-      <!-- column-name RGBA -->
-      <column type="GdkRGBA"/>
-      <!-- column-name r -->
-      <column type="gdouble"/>
-      <!-- column-name g -->
-      <column type="gdouble"/>
-      <!-- column-name gdouble1 -->
-      <column type="gdouble"/>
     </columns>
   </object>
   <object class="GtkWindow" id="main_window">
@@ -514,7 +522,8 @@
                                     <property name="width_request">175</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="model">stats_liststore</property>
+                                    <property name="model">chart_liststore</property>
+                                    <property name="enable_grid_lines">horizontal</property>
                                     <child internal-child="selection">
                                       <object class="GtkTreeSelection">
                                         <property name="mode">none</property>
@@ -526,12 +535,13 @@
                                         <property name="sizing">autosize</property>
                                         <property name="min_width">128</property>
                                         <property name="title" translatable="yes">Leyenda</property>
+                                        <property name="alignment">0.5</property>
                                         <child>
                                           <object class="GtkCellRendererText">
                                             <property name="text">██</property>
                                           </object>
                                           <attributes>
-                                            <attribute name="foreground-rgba">4</attribute>
+                                            <attribute name="foreground-rgba">3</attribute>
                                           </attributes>
                                         </child>
                                         <child>
