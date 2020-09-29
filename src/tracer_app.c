@@ -12,14 +12,14 @@
 
 static struct {
     pid_t child_proc;
+    guint source_id;
     gboolean continuous;
-    gboolean is_waiting;
     TraceResult trace_result;
 } app;
 
 void tracer_app_init(void) {
     app.child_proc = 0;
-    app.is_waiting = FALSE;
+    app.source_id = 0;
 }
 
 void tracer_app_quit(void) {
@@ -30,8 +30,10 @@ void tracer_app_kill_child_proc(void) {
     if (app.child_proc > 0) {
         kill(app.child_proc, SIGKILL);
         waitpid(app.child_proc, NULL, 0);
-        app.is_waiting = FALSE;
         app.child_proc = 0;
+        if (app.source_id)
+            g_source_remove(app.source_id);
+        app.source_id = 0;
     }
 }
 
@@ -64,7 +66,7 @@ static pid_t start_tracee(const char *pathname, char *const *args) {
 #define STOPPED_BY_SYSCALL(status) (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80)
 static gboolean wait_syscall_source_func(gpointer data) {
     if (app.child_proc <= 0) {
-        app.is_waiting = FALSE;
+        app.source_id = 0;
         return G_SOURCE_REMOVE;
     }
 
@@ -91,7 +93,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
                     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
                     return G_SOURCE_CONTINUE;
                 } else {
-                    app.is_waiting = FALSE;
+                    app.source_id = 0;
                     return G_SOURCE_REMOVE;
                 }
             default:
@@ -101,9 +103,9 @@ static gboolean wait_syscall_source_func(gpointer data) {
     }
     if (WIFEXITED(status)) {
         tracer_app_log_syscall();
-        app.is_waiting = FALSE;
         app.child_proc = 0;
         tracer_app_finish_trace();
+        app.source_id = 0;
         return G_SOURCE_REMOVE;
     }
     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
@@ -117,17 +119,15 @@ gboolean tracer_app_start_trace(gchar **args, gboolean continuous) {
     if (child > 0) {
         app.child_proc = child;
         app.continuous = continuous;
-        app.is_waiting = TRUE;
         ptrace(PTRACE_SYSCALL, child, 0, 0);
-        g_idle_add(wait_syscall_source_func, NULL);
+        app.source_id = g_idle_add(wait_syscall_source_func, NULL);
         return TRUE;
     } else return FALSE;
 }
 
 void tracer_app_trace_next(void) {
-    if (app.child_proc > 0 && !app.is_waiting) {
+    if (app.child_proc > 0 && app.source_id == 0) {
         ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
-        g_idle_add(wait_syscall_source_func, NULL);
-        app.is_waiting = TRUE;
+        app.source_id = g_idle_add(wait_syscall_source_func, NULL);
     }
 }
