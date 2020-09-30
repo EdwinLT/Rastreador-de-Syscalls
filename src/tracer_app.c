@@ -30,7 +30,7 @@ static void tracer_app_queue_exit(int status) {
     g_queue_push_tail(&app.trace_queue, result);
 }
 
-static void tracer_app_queue_stop(int signal) {
+static void tracer_app_queue_term(int signal) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
     *result = (TraceResult){type: TRACEE_TERMINATED, term_signal: signal};
     g_queue_push_tail(&app.trace_queue, result);
@@ -56,7 +56,7 @@ void tracer_app_kill_child_proc(void) {
             int status;
             waitpid(app.child_proc, &status, 0);
             if (WIFSIGNALED(status)) {
-                tracer_app_queue_stop(WTERMSIG(status));
+                tracer_app_queue_term(WTERMSIG(status));
                 app.child_proc = 0;
                 if (app.source_id)
                     g_source_remove(app.source_id);
@@ -90,16 +90,15 @@ static pid_t start_tracee(const char *pathname, char *const *args) {
 }
 
 #define STOPPED_BY_SYSCALL(status) (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80)
+#define REMOVE_GSOURCE {app.source_id = 0; return G_SOURCE_REMOVE;}
 static gboolean wait_syscall_source_func(gpointer data) {
-    if (app.child_proc <= 0) {
-        app.source_id = 0;
-        return G_SOURCE_REMOVE;
-    }
+    if (app.child_proc <= 0) REMOVE_GSOURCE
 
     int status;
     if (waitpid(app.child_proc, &status, WNOHANG) == 0) {
         return G_SOURCE_CONTINUE;
     }
+
     if (STOPPED_BY_SYSCALL(status)) {
         struct ptrace_syscall_info sc_info;
         ptrace(PTRACE_GET_SYSCALL_INFO, app.child_proc, sizeof(sc_info), &sc_info);
@@ -111,32 +110,32 @@ static gboolean wait_syscall_source_func(gpointer data) {
                     app.syscall_buffer.args[i] = sc_info.entry.args[i];
                 ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
                 return G_SOURCE_CONTINUE;
+
             case PTRACE_SYSCALL_INFO_EXIT:
-                app.syscall_buffer.has_retval = TRUE;
                 app.syscall_buffer.retval = sc_info.exit.rval;
+                app.syscall_buffer.has_retval = TRUE;
                 tracer_app_queue_syscall();
-                if (app.continuous) {
-                    ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
-                    return G_SOURCE_CONTINUE;
-                } else {
-                    app.source_id = 0;
-                    return G_SOURCE_REMOVE;
-                }
-            default:
-                fprintf(stderr, "Error: unexpected ptrace result\n");
-                exit(EXIT_FAILURE);
+                if (!app.continuous) REMOVE_GSOURCE
+                break;
+
+            case PTRACE_SYSCALL_INFO_SECCOMP:
+                app.syscall_buffer.number = sc_info.seccomp.nr;
+                for (int i = 0; i < 6; ++i)
+                    app.syscall_buffer.args[i] = sc_info.seccomp.args[i];
+                app.syscall_buffer.retval = sc_info.seccomp.ret_data;
+                app.syscall_buffer.has_retval = TRUE;
+                tracer_app_queue_syscall();
+                if (!app.continuous) REMOVE_GSOURCE
         }
     } else if (WIFEXITED(status)) {
         tracer_app_queue_syscall();
         tracer_app_queue_exit(WEXITSTATUS(status));
         app.child_proc = 0;
-        app.source_id = 0;
-        return G_SOURCE_REMOVE;
+        REMOVE_GSOURCE
     } else if (WIFSIGNALED(status)) {
-        tracer_app_queue_stop(WTERMSIG(status));
+        tracer_app_queue_term(WTERMSIG(status));
         app.child_proc = 0;
-        app.source_id = 0;
-        return G_SOURCE_REMOVE;
+        REMOVE_GSOURCE
     }
 
     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
