@@ -25,8 +25,30 @@ static struct {
     GtkListStore *chart_liststore;
     GtkWidget *chart_drawing_area;
     gulong syscall_counter;
+    guint refresh_source_id;
 } gui;
 #define GUI_BIND_OBJECT(builder, class, obj) (gui.obj = class(gtk_builder_get_object(builder, #obj)))
+
+static void tracer_gui_log_syscall(SyscallInfo*);
+static void tracer_gui_finish_trace(void);
+
+#define REFRESH_INTERVAL (1000 / 30)
+static gboolean refresh_gui_source_func(gpointer data) {
+    TraceResult *trace;
+    while (trace = tracer_app_pop_queued_result()) {
+        switch (trace->type) {
+            case TRACEE_SYSCALL:
+                tracer_gui_log_syscall(&trace->syscall);
+                break;
+            case TRACEE_EXIT:
+                printf("Exit status: %d\n", trace->exit_status);
+                tracer_gui_finish_trace();
+                break;
+        }
+        g_free(trace);
+    }
+    return G_SOURCE_CONTINUE;
+}
 
 static void tracer_gui_init(void) {
     GtkBuilder *builder = gtk_builder_new_from_resource("/com/github/edwinlt/Rastreador/window.glade");
@@ -50,6 +72,7 @@ static void tracer_gui_init(void) {
 
     g_object_unref(builder);
     gtk_window_present(gui.main_window);
+    gui.refresh_source_id = g_timeout_add(REFRESH_INTERVAL, refresh_gui_source_func, NULL);
 }
 
 void tracer_gui_launch(int argc, char **argv) {
@@ -59,14 +82,14 @@ void tracer_gui_launch(int argc, char **argv) {
 }
 
 
-void tracer_gui_log_syscall(TraceResult *trace) {
-    const gchar *name = (const gchar*) syscall_name(trace->sysno);
+static void tracer_gui_log_syscall(SyscallInfo *syscall) {
+    const gchar *name = (const gchar*) syscall_name(syscall->number);
     GtkTreeIter iter;
 
     // Update log
     gtk_list_store_insert_with_values(gui.log_liststore, &iter, -1,
         LOG_COL_INDEX, gui.syscall_counter++,
-        LOG_COL_SYSNO, (gint64) trace->sysno,
+        LOG_COL_SYSNO, (gint64) syscall->number,
         LOG_COL_NAME, name,
         -1
     );
@@ -81,7 +104,7 @@ void tracer_gui_log_syscall(TraceResult *trace) {
     while (valid) {
         glong sysno; guint count;
         gtk_tree_model_get(tm, &iter, STATS_COL_SYSNO, &sysno, STATS_COL_COUNT, &count, -1);
-        if (sysno == trace->sysno) {
+        if (sysno == syscall->number) {
             gtk_list_store_set(gui.stats_liststore, &iter, 2, count + 1, -1);
             not_in_table = FALSE;
             break;
@@ -90,7 +113,7 @@ void tracer_gui_log_syscall(TraceResult *trace) {
     }
     if (not_in_table) {
         gtk_list_store_insert_with_values(gui.stats_liststore, NULL, -1,
-            STATS_COL_SYSNO, (gint64) trace->sysno,
+            STATS_COL_SYSNO, (gint64) syscall->number,
             STATS_COL_NAME,  name,
             STATS_COL_COUNT, (guint) 1U,
             -1
@@ -135,7 +158,7 @@ static void tracer_gui_set_pie_chart_data(void) {
     free(hues);
 }
 
-void tracer_gui_on_trace_finish(void) {
+static void tracer_gui_finish_trace(void) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui.back_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(gui.proc_control_box), FALSE);
     tracer_gui_set_pie_chart_data();
@@ -144,6 +167,7 @@ void tracer_gui_on_trace_finish(void) {
 
 void on_main_window_destroy(void) {
     tracer_app_quit();
+    g_source_remove(gui.refresh_source_id);
     gtk_main_quit();
 }
 
@@ -174,7 +198,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
 
 void on_stop_button_clicked(GtkButton *btn, gpointer data) {
     tracer_app_kill_child_proc();
-    tracer_gui_on_trace_finish();
+    tracer_gui_finish_trace();
 }
 
 void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {
