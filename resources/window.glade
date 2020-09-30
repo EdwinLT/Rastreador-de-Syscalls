@@ -4,11 +4,11 @@
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkListStore" id="chart_liststore">
     <columns>
-      <!-- column-name Syscall number -->
+      <!-- column-name Syscall -->
       <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
-      <!-- column-name Proportion -->
+      <!-- column-name Percent -->
       <column type="gdouble"/>
       <!-- column-name RGBA -->
       <column type="GdkRGBA"/>
@@ -20,11 +20,16 @@
       <column type="gdouble"/>
     </columns>
   </object>
+  <object class="GtkImage" id="execute_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-execute</property>
+  </object>
   <object class="GtkListStore" id="log_liststore">
     <columns>
       <!-- column-name Index -->
       <column type="gulong"/>
-      <!-- column-name Syscall number -->
+      <!-- column-name Syscall -->
       <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
@@ -50,7 +55,7 @@
   </object>
   <object class="GtkListStore" id="stats_liststore">
     <columns>
-      <!-- column-name Syscall number -->
+      <!-- column-name Syscall -->
       <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
@@ -223,12 +228,11 @@
                 <property name="spacing">8</property>
                 <child>
                   <object class="GtkButton" id="back_button">
-                    <property name="label">gtk-go-back</property>
+                    <property name="label">Nuevo programa</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="relief">none</property>
-                    <property name="use_stock">True</property>
+                    <property name="image">execute_icon</property>
                     <signal name="clicked" handler="on_back_button_clicked" swapped="no"/>
                   </object>
                   <packing>
@@ -514,8 +518,8 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hscrollbar_policy">never</property>
+                                <property name="vscrollbar_policy">always</property>
                                 <property name="window_placement">top-right</property>
-                                <property name="shadow_type">in</property>
                                 <property name="overlay_scrolling">False</property>
                                 <child>
                                   <object class="GtkTreeView" id="legend">
@@ -523,32 +527,57 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="model">chart_liststore</property>
-                                    <property name="enable_grid_lines">horizontal</property>
+                                    <property name="headers_visible">False</property>
+                                    <property name="search_column">0</property>
                                     <child internal-child="selection">
-                                      <object class="GtkTreeSelection">
-                                        <property name="mode">none</property>
+                                      <object class="GtkTreeSelection" id="chart_selection">
+                                        <signal name="changed" handler="on_chart_selection_changed" swapped="no"/>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="GtkTreeViewColumn">
+                                      <object class="GtkTreeViewColumn" id="label_column">
                                         <property name="spacing">4</property>
                                         <property name="sizing">autosize</property>
                                         <property name="min_width">128</property>
-                                        <property name="title" translatable="yes">Leyenda</property>
-                                        <property name="alignment">0.5</property>
+                                        <property name="title" translatable="yes">Syscalls</property>
+                                        <property name="expand">True</property>
+                                        <property name="sort_order">descending</property>
                                         <child>
-                                          <object class="GtkCellRendererText">
+                                          <object class="GtkCellRendererText" id="color_renderer">
                                             <property name="text">██</property>
                                           </object>
                                           <attributes>
+                                            <attribute name="cell-background-rgba">3</attribute>
+                                            <attribute name="background-rgba">3</attribute>
                                             <attribute name="foreground-rgba">3</attribute>
                                           </attributes>
                                         </child>
                                         <child>
-                                          <object class="GtkCellRendererText"/>
+                                          <object class="GtkCellRendererText" id="label_renderer"/>
                                           <attributes>
                                             <attribute name="text">1</attribute>
                                           </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="percent_column">
+                                        <property name="sizing">autosize</property>
+                                        <property name="title" translatable="yes">Porcentaje</property>
+                                        <property name="sort_order">descending</property>
+                                        <property name="sort_column_id">2</property>
+                                        <child>
+                                          <object class="GtkCellRendererText" id="percent_num_renderer">
+                                            <property name="xalign">1</property>
+                                          </object>
+                                          <attributes>
+                                            <attribute name="text">2</attribute>
+                                          </attributes>
+                                        </child>
+                                        <child>
+                                          <object class="GtkCellRendererText" id="percent_sign_renderer">
+                                            <property name="text">%</property>
+                                          </object>
                                         </child>
                                       </object>
                                     </child>
@@ -563,6 +592,8 @@
                             </child>
                             <child>
                               <object class="GtkDrawingArea" id="chart_drawing_area">
+                                <property name="width_request">250</property>
+                                <property name="height_request">250</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="margin_left">4</property>

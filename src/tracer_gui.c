@@ -23,6 +23,7 @@ static struct {
     GtkListStore *log_liststore;
     GtkListStore *stats_liststore;
     GtkListStore *chart_liststore;
+    GtkTreeSelection *chart_selection;
     GtkWidget *chart_drawing_area;
     gulong syscall_counter;
     guint refresh_source_id;
@@ -58,21 +59,24 @@ static void tracer_gui_init(void) {
     GtkBuilder *builder = gtk_builder_new_from_resource("/com/github/edwinlt/Rastreador/window.glade");
     gtk_builder_connect_signals(builder, NULL);
 
-    GUI_BIND_OBJECT(builder, GTK_WINDOW,     main_window);
-    GUI_BIND_OBJECT(builder, GTK_STACK,      main_stack);
-    GUI_BIND_OBJECT(builder, GTK_STACK,      process_stack);
-    GUI_BIND_OBJECT(builder, GTK_ENTRY,      command_entry);
-    GUI_BIND_OBJECT(builder, GTK_COMBO_BOX,  mode_combobox);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON,     start_button);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON,     back_button);
-    GUI_BIND_OBJECT(builder, GTK_BUTTON,     next_syscall_button);
+    GUI_BIND_OBJECT(builder, GTK_WINDOW, main_window);
+    GUI_BIND_OBJECT(builder, GTK_STACK, main_stack);
+    GUI_BIND_OBJECT(builder, GTK_STACK, process_stack);
+    GUI_BIND_OBJECT(builder, GTK_ENTRY, command_entry);
+    GUI_BIND_OBJECT(builder, GTK_COMBO_BOX, mode_combobox);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON, start_button);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON, back_button);
+    GUI_BIND_OBJECT(builder, GTK_BUTTON, next_syscall_button);
     GUI_BIND_OBJECT(builder, GTK_BUTTON_BOX, proc_control_box);
-    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW,  log_treeview);
-    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW,  stats_treeview);
+    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW, log_treeview);
+    GUI_BIND_OBJECT(builder, GTK_TREE_VIEW, stats_treeview);
     GUI_BIND_OBJECT(builder, GTK_LIST_STORE, log_liststore);
     GUI_BIND_OBJECT(builder, GTK_LIST_STORE, stats_liststore);
     GUI_BIND_OBJECT(builder, GTK_LIST_STORE, chart_liststore);
-    GUI_BIND_OBJECT(builder, GTK_WIDGET,     chart_drawing_area);
+    GUI_BIND_OBJECT(builder, GTK_TREE_SELECTION, chart_selection);
+    GUI_BIND_OBJECT(builder, GTK_WIDGET, chart_drawing_area);
+    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(gui.chart_liststore),
+                                         CHART_COL_PERCENT, GTK_SORT_DESCENDING);
 
     g_object_unref(builder);
     gtk_window_present(gui.main_window);
@@ -138,13 +142,13 @@ static void tracer_gui_set_pie_chart_data(void) {
     while (valid) {
         gint64 sysno; guint count;
         gtk_tree_model_get(stats_model, &iter, STATS_COL_SYSNO, &sysno, STATS_COL_COUNT, &count, -1);
-        gdouble proportion = (gdouble) count / gui.syscall_counter;
+        gdouble percent = (gdouble) count / gui.syscall_counter * 100.0;
 
         GdkRGBA rgba = hsv_to_rgb(hues[i], 0.62, 0.9);
         gtk_list_store_insert_with_values(gui.chart_liststore, NULL, -1,
             CHART_COL_SYSNO, sysno,
             CHART_COL_NAME, syscall_name(sysno),
-            CHART_COL_PROP, proportion, 
+            CHART_COL_PERCENT, percent, 
             CHART_COL_RGBA, &rgba,
             // Because of a bug in gtk, we can't properly retrieve the GdkRGBA
             // To get around this, we store the r, g, and b separately as well
@@ -215,8 +219,6 @@ void on_back_button_clicked(GtkButton *btn, gpointer data) {
 }
 
 
-#define TAU (2 * M_PI)
-
 static void pie_chart_slice(cairo_t *cr, double xc, double yc, 
                             double r, double angle1, double angle2) {
     cairo_move_to(cr, xc, yc);
@@ -224,22 +226,34 @@ static void pie_chart_slice(cairo_t *cr, double xc, double yc,
     cairo_line_to(cr, xc, yc);
 }
 
-static void draw_pie_chart(cairo_t *cr, double radius) {
-    double angle = 0.0;
+static void draw_pie_chart(cairo_t *cr, double radius, double radius_selected) {
     GtkTreeModel *chart_model = GTK_TREE_MODEL(gui.chart_liststore);
     GtkTreeIter iter;
+
+    gboolean has_selection = gtk_tree_selection_get_selected(gui.chart_selection, NULL, &iter);
+    gint64 selected;
+    if (has_selection) {
+        gtk_tree_model_get(chart_model, &iter, CHART_COL_SYSNO, &selected, -1);
+    }
+
+    double angle = 0.0;
+    double slice_radius = radius;
     gboolean valid = gtk_tree_model_get_iter_first(chart_model, &iter);
     while (valid) {
-        gdouble proportion;
+        gint64 sysno;
+        gdouble percent;
         gdouble r, g, b;
         gtk_tree_model_get(chart_model, &iter,
-            CHART_COL_PROP, &proportion, 
+            CHART_COL_SYSNO, &sysno, CHART_COL_PERCENT, &percent,
             CHART_COL_R, &r, CHART_COL_G, &g, CHART_COL_B, &b,
             -1
         );
 
-        double end_angle = angle + proportion * TAU;
-        pie_chart_slice(cr, 0.0, 0.0, radius, angle, end_angle);
+        if (has_selection)
+            slice_radius = (selected == sysno)? radius_selected : radius;
+
+        double end_angle = angle + (percent/100.0)*(2*G_PI);
+        pie_chart_slice(cr, 0.0, 0.0, slice_radius, angle, end_angle);
         cairo_set_source_rgb(cr, r, g, b);
         cairo_fill_preserve(cr);
         cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
@@ -253,9 +267,13 @@ static void draw_pie_chart(cairo_t *cr, double radius) {
 gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     double half_width  = (double)gtk_widget_get_allocated_width(widget)  * 0.5;
     double half_height = (double)gtk_widget_get_allocated_height(widget) * 0.5;
-    double radius = fmin(half_width, half_height) * 0.9;
+    double r = fmin(half_width, half_height);
     cairo_translate(cr, half_width, half_height);
     cairo_set_line_width(cr, 1.0);
-    draw_pie_chart(cr, radius);
+    draw_pie_chart(cr, r * 0.9, r * 0.97);
     return FALSE;
+}
+
+void on_chart_selection_changed(GtkTreeSelection *select, gpointer data) {
+    gtk_widget_queue_draw(gui.chart_drawing_area);
 }
