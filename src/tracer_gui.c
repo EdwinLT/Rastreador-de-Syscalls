@@ -44,6 +44,10 @@ static gboolean refresh_gui_source_func(gpointer data) {
                 printf("Exit status: %d\n", trace->exit_status);
                 tracer_gui_finish_trace();
                 break;
+            case TRACEE_TERMINATED:
+                printf("Stop signal: %d\n", trace->term_signal);
+                tracer_gui_finish_trace();
+                break;
         }
         g_free(trace);
     }
@@ -198,7 +202,6 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
 
 void on_stop_button_clicked(GtkButton *btn, gpointer data) {
     tracer_app_kill_child_proc();
-    tracer_gui_finish_trace();
 }
 
 void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {

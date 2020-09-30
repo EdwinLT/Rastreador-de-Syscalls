@@ -15,45 +15,60 @@ static struct {
     guint source_id;
     gboolean continuous;
     SyscallInfo syscall_buffer;
-    GQueue syscall_queue;
+    GQueue trace_queue;
 } app;
 
-void tracer_app_init(void) {
-    app.child_proc = 0;
-    app.source_id = 0;
-    g_queue_init(&app.syscall_queue);
-}
-
-void tracer_app_quit(void) {
-    tracer_app_kill_child_proc();
-    g_queue_free_full(&app.syscall_queue, g_free);
-}
-
-void tracer_app_kill_child_proc(void) {
-    if (app.child_proc > 0) {
-        kill(app.child_proc, SIGKILL);
-        waitpid(app.child_proc, NULL, 0);
-        app.child_proc = 0;
-        if (app.source_id)
-            g_source_remove(app.source_id);
-        app.source_id = 0;
-    }
-}
-
-TraceResult *tracer_app_pop_queued_result(void) {
-    return (TraceResult*) g_queue_pop_head(&app.syscall_queue);
-}
-
-static void tracer_app_log_syscall(void) {
+static void tracer_app_queue_syscall(void) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
     *result = (TraceResult){type: TRACEE_SYSCALL, syscall: app.syscall_buffer};
-    g_queue_push_tail(&app.syscall_queue, result);
+    g_queue_push_tail(&app.trace_queue, result);
 }
 
 static void tracer_app_queue_exit(int status) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
     *result = (TraceResult){type: TRACEE_EXIT, exit_status: status};
-    g_queue_push_tail(&app.syscall_queue, result);
+    g_queue_push_tail(&app.trace_queue, result);
+}
+
+static void tracer_app_queue_stop(int signal) {
+    TraceResult *result = g_malloc(sizeof(TraceResult));
+    *result = (TraceResult){type: TRACEE_TERMINATED, term_signal: signal};
+    g_queue_push_tail(&app.trace_queue, result);
+}
+
+
+void tracer_app_init(void) {
+    app.child_proc = 0;
+    app.source_id = 0;
+    g_queue_init(&app.trace_queue);
+}
+
+void tracer_app_quit(void) {
+    tracer_app_kill_child_proc();
+    g_queue_free_full(&app.trace_queue, g_free);
+}
+
+void tracer_app_kill_child_proc(void) {
+    if (app.child_proc <= 0)
+        return;
+    if (kill(app.child_proc, SIGKILL) == 0) {
+        while (TRUE) {
+            int status;
+            waitpid(app.child_proc, &status, 0);
+            if (WIFSIGNALED(status)) {
+                tracer_app_queue_stop(WTERMSIG(status));
+                app.child_proc = 0;
+                if (app.source_id)
+                    g_source_remove(app.source_id);
+                app.source_id = 0;
+                break;
+            }
+        }
+    }
+}
+
+TraceResult *tracer_app_pop_queued_result(void) {
+    return (TraceResult*) g_queue_pop_head(&app.trace_queue);
 }
 
 
@@ -99,7 +114,7 @@ static gboolean wait_syscall_source_func(gpointer data) {
             case PTRACE_SYSCALL_INFO_EXIT:
                 app.syscall_buffer.has_retval = TRUE;
                 app.syscall_buffer.retval = sc_info.exit.rval;
-                tracer_app_log_syscall();
+                tracer_app_queue_syscall();
                 if (app.continuous) {
                     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
                     return G_SOURCE_CONTINUE;
@@ -111,14 +126,19 @@ static gboolean wait_syscall_source_func(gpointer data) {
                 fprintf(stderr, "Error: unexpected ptrace result\n");
                 exit(EXIT_FAILURE);
         }
-    }
-    if (WIFEXITED(status)) {
-        tracer_app_log_syscall();
-        app.child_proc = 0;
+    } else if (WIFEXITED(status)) {
+        tracer_app_queue_syscall();
         tracer_app_queue_exit(WEXITSTATUS(status));
+        app.child_proc = 0;
+        app.source_id = 0;
+        return G_SOURCE_REMOVE;
+    } else if (WIFSIGNALED(status)) {
+        tracer_app_queue_stop(WTERMSIG(status));
+        app.child_proc = 0;
         app.source_id = 0;
         return G_SOURCE_REMOVE;
     }
+
     ptrace(PTRACE_SYSCALL, app.child_proc, 0, 0);
     return G_SOURCE_CONTINUE;
 }
@@ -130,7 +150,7 @@ gboolean tracer_app_start_trace(gchar **args, gboolean continuous) {
     if (child > 0) {
         app.child_proc = child;
         app.continuous = continuous;
-        g_queue_clear_full(&app.syscall_queue, g_free);
+        g_queue_clear_full(&app.trace_queue, g_free);
         ptrace(PTRACE_SYSCALL, child, 0, 0);
         app.source_id = g_idle_add(wait_syscall_source_func, NULL);
         return TRUE;

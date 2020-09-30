@@ -6,6 +6,7 @@
 typedef enum {
     TRACEE_SYSCALL,
     TRACEE_EXIT,
+    TRACEE_TERMINATED
 } TraceResultType;
 
 typedef struct SyscallInfo {
@@ -20,6 +21,7 @@ typedef struct TraceResult {
     union {
         SyscallInfo syscall;
         int exit_status;
+        int term_signal;
     };
 } TraceResult;
 
