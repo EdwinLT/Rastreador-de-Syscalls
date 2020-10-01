@@ -522,7 +522,7 @@
                                 <property name="window_placement">top-right</property>
                                 <property name="overlay_scrolling">False</property>
                                 <child>
-                                  <object class="GtkTreeView" id="legend">
+                                  <object class="GtkTreeView" id="chart_legend">
                                     <property name="width_request">175</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
