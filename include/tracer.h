@@ -3,6 +3,9 @@
 #include <ctype.h>
 #include <glib.h>
 
+struct Tracer;
+typedef struct Tracer Tracer;
+
 typedef enum {
     TRACEE_SYSCALL,
     TRACEE_EXIT,
@@ -25,14 +28,14 @@ typedef struct TraceResult {
     };
 } TraceResult;
 
-void tracer_app_init(void);
+Tracer *tracer_new();
 
-void tracer_app_quit(void);
+void tracer_free(Tracer *tracer);
 
-gboolean tracer_app_start_trace(gchar **args, gboolean continuous);
+gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous);
 
-void tracer_app_kill_child_proc(void);
+void tracer_kill_child_proc(Tracer *tracer);
 
-void tracer_app_trace_next(void);
+void tracer_trace_next(Tracer *tracer);
 
-TraceResult *tracer_app_pop_queued_result(void);
+TraceResult *tracer_pop_queued_result(Tracer *tracer);
