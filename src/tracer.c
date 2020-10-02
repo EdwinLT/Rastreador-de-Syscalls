@@ -11,67 +11,32 @@
 #include <gtk/gtk.h>
 
 struct Tracer {
-    pid_t child_proc;
-    guint source_id;
-    gboolean continuous;
-    SyscallInfo syscall_buffer;
-    GQueue trace_queue;
+    GThreadPool *thread_pool;
+    GAsyncQueue *trace_result_queue;
 };
 
-static void tracer_queue_syscall(Tracer *tracer) {
+typedef struct TraceParams {
+    gboolean continuous;
+    gchar **args;
+} TraceParams;
+
+
+static void tracer_queue_syscall(Tracer *tracer, SyscallInfo *syscall) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
-    *result = (TraceResult){type: TRACEE_SYSCALL, syscall: tracer->syscall_buffer};
-    g_queue_push_tail(&tracer->trace_queue, result);
+    *result = (TraceResult){type: TRACEE_SYSCALL, syscall: *syscall};
+    g_async_queue_push(tracer->trace_result_queue, result);
 }
 
 static void tracer_queue_exit(Tracer *tracer, int status) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
     *result = (TraceResult){type: TRACEE_EXIT, exit_status: status};
-    g_queue_push_tail(&tracer->trace_queue, result);
+    g_async_queue_push(tracer->trace_result_queue, result);
 }
 
 static void tracer_queue_term(Tracer *tracer, int signal) {
     TraceResult *result = g_malloc(sizeof(TraceResult));
     *result = (TraceResult){type: TRACEE_TERMINATED, term_signal: signal};
-    g_queue_push_tail(&tracer->trace_queue, result);
-}
-
-
-Tracer *tracer_new() {
-    Tracer *tracer = g_malloc(sizeof(Tracer));
-    tracer->child_proc = 0;
-    tracer->source_id = 0;
-    g_queue_init(&tracer->trace_queue);
-    return tracer;
-}
-
-void tracer_free(Tracer *tracer) {
-    tracer_kill_child_proc(tracer);
-    g_queue_free_full(&tracer->trace_queue, g_free);
-    g_free(tracer);
-}
-
-void tracer_kill_child_proc(Tracer *tracer) {
-    if (tracer->child_proc <= 0)
-        return;
-    if (kill(tracer->child_proc, SIGKILL) == 0) {
-        while (TRUE) {
-            int status;
-            waitpid(tracer->child_proc, &status, 0);
-            if (WIFSIGNALED(status)) {
-                tracer_queue_term(tracer, WTERMSIG(status));
-                tracer->child_proc = 0;
-                if (tracer->source_id)
-                    g_source_remove(tracer->source_id);
-                tracer->source_id = 0;
-                break;
-            }
-        }
-    }
-}
-
-TraceResult *tracer_pop_queued_result(Tracer *tracer) {
-    return (TraceResult*) g_queue_pop_head(&tracer->trace_queue);
+    g_async_queue_push(tracer->trace_result_queue, result);
 }
 
 
@@ -93,77 +58,95 @@ static pid_t start_tracee(const char *pathname, char *const *args) {
 }
 
 #define STOPPED_BY_SYSCALL(status) (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80)
-#define STOP_WAITING(tracer) {tracer->source_id = 0; return G_SOURCE_REMOVE;}
+static void worker_thread(gpointer data, gpointer user_data) {
+    TraceParams *params = data;
+    Tracer *tracer = user_data;
 
-static gboolean wait_source_func(gpointer data) {
-    Tracer *tracer = (Tracer*) data;
-    if (tracer->child_proc <= 0) STOP_WAITING(tracer)
-
-    int status;
-    if (waitpid(tracer->child_proc, &status, WNOHANG) == 0) {
-        return G_SOURCE_CONTINUE;
-    }
-
-    if (STOPPED_BY_SYSCALL(status)) {
-        struct ptrace_syscall_info sc_info;
-        ptrace(PTRACE_GET_SYSCALL_INFO, tracer->child_proc, sizeof(sc_info), &sc_info);
-        switch (sc_info.op) {
-            case PTRACE_SYSCALL_INFO_ENTRY:
-                tracer->syscall_buffer.has_retval = FALSE;
-                tracer->syscall_buffer.number = sc_info.entry.nr;
-                for (int i = 0; i < 6; ++i)
-                    tracer->syscall_buffer.args[i] = sc_info.entry.args[i];
-                ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
-                return G_SOURCE_CONTINUE;
-
-            case PTRACE_SYSCALL_INFO_EXIT:
-                tracer->syscall_buffer.retval = sc_info.exit.rval;
-                tracer->syscall_buffer.has_retval = TRUE;
-                tracer_queue_syscall(tracer);
-                if (!tracer->continuous) STOP_WAITING(tracer)
-                break;
-
-            case PTRACE_SYSCALL_INFO_SECCOMP:
-                tracer->syscall_buffer.number = sc_info.seccomp.nr;
-                for (int i = 0; i < 6; ++i)
-                    tracer->syscall_buffer.args[i] = sc_info.seccomp.args[i];
-                tracer->syscall_buffer.retval = sc_info.seccomp.ret_data;
-                tracer->syscall_buffer.has_retval = TRUE;
-                tracer_queue_syscall(tracer);
-                if (!tracer->continuous) STOP_WAITING(tracer)
-        }
-    } else if (WIFEXITED(status)) {
-        tracer_queue_syscall(tracer);
-        tracer_queue_exit(tracer, WEXITSTATUS(status));
-        tracer->child_proc = 0;
-        STOP_WAITING(tracer)
-    } else if (WIFSIGNALED(status)) {
-        tracer_queue_term(tracer, WTERMSIG(status));
-        tracer->child_proc = 0;
-        STOP_WAITING(tracer)
-    }
-
-    ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
-    return G_SOURCE_CONTINUE;
-}
-
-gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous) {
-    if (tracer->child_proc > 0) return FALSE;
-    pid_t child = start_tracee(args[0], args);
+    pid_t child = start_tracee(params->args[0], params->args);
 
     if (child > 0) {
-        tracer->child_proc = child;
-        tracer->continuous = continuous;
-        g_queue_clear_full(&tracer->trace_queue, g_free);
+        int status;
+        SyscallInfo syscall;
+
         ptrace(PTRACE_SYSCALL, child, 0, 0);
-        tracer->source_id = g_idle_add(wait_source_func, tracer);
-        return TRUE;
-    } else return FALSE;
+        while (TRUE) {
+            if (waitpid(child, &status, WNOHANG) == 0) {
+                continue;
+            }
+            if (WIFEXITED(status)) {
+                tracer_queue_syscall(tracer, &syscall);
+                tracer_queue_exit(tracer, WEXITSTATUS(status));
+                break;
+            } else if (WIFSIGNALED(status)) {
+                tracer_queue_term(tracer, WTERMSIG(status));
+                break;
+            } else if (STOPPED_BY_SYSCALL(status)) {
+                struct ptrace_syscall_info sc_info;
+                ptrace(PTRACE_GET_SYSCALL_INFO, child, sizeof(sc_info), &sc_info);
+                switch (sc_info.op) {
+                    case PTRACE_SYSCALL_INFO_ENTRY:
+                        syscall.has_retval = FALSE;
+                        syscall.number = sc_info.entry.nr;
+                        for (int i = 0; i < 6; ++i)
+                            syscall.args[i] = sc_info.entry.args[i];
+                        ptrace(PTRACE_SYSCALL, child, 0, 0);
+                        continue;
+                    case PTRACE_SYSCALL_INFO_EXIT:
+                        syscall.retval = sc_info.exit.rval;
+                        syscall.has_retval = TRUE;
+                        tracer_queue_syscall(tracer, &syscall);
+                        break;
+                    case PTRACE_SYSCALL_INFO_SECCOMP:
+                        syscall.number = sc_info.seccomp.nr;
+                        for (int i = 0; i < 6; ++i)
+                            syscall.args[i] = sc_info.seccomp.args[i];
+                        syscall.retval = sc_info.seccomp.ret_data;
+                        syscall.has_retval = TRUE;
+                        tracer_queue_syscall(tracer, &syscall);
+                        break;
+                }
+            } else {
+                ptrace(PTRACE_SYSCALL, child, 0, 0);
+                continue;
+            }
+
+            ptrace(PTRACE_SYSCALL, child, 0, 0);
+        }
+    }
+
+    g_strfreev(params->args);
+    g_free(params);
+}
+
+
+Tracer *tracer_new() {
+    Tracer *tracer = g_malloc(sizeof(Tracer));
+    tracer->thread_pool = g_thread_pool_new(worker_thread, tracer, 1, TRUE, NULL);
+    tracer->trace_result_queue = g_async_queue_new_full(g_free);
+    return tracer;
+}
+
+void tracer_free(Tracer *tracer) {
+    tracer_kill_child_proc(tracer);
+    g_thread_pool_free(tracer->thread_pool, TRUE, TRUE);
+    g_async_queue_unref(tracer->trace_result_queue);
+    g_free(tracer);
+}
+
+void tracer_kill_child_proc(Tracer *tracer) {
+    
+}
+
+TraceResult *tracer_pop_queued_result(Tracer *tracer) {
+    return g_async_queue_try_pop(tracer->trace_result_queue);
+}
+
+gboolean tracer_start_trace_async(Tracer *tracer, gchar **args, gboolean continuous) {
+    TraceParams *params = g_malloc(sizeof(TraceParams));
+    *params = (TraceParams) {continuous: continuous, args: g_strdupv(args)};
+    return g_thread_pool_push(tracer->thread_pool, params, NULL);
 }
 
 void tracer_trace_next(Tracer *tracer) {
-    if (tracer->child_proc > 0 && tracer->source_id == 0) {
-        ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
-        tracer->source_id = g_idle_add(wait_source_func, tracer);
-    }
+    
 }

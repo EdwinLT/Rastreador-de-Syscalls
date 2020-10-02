@@ -32,7 +32,7 @@ Tracer *tracer_new();
 
 void tracer_free(Tracer *tracer);
 
-gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous);
+gboolean tracer_start_trace_async(Tracer *tracer, gchar **args, gboolean continuous);
 
 void tracer_kill_child_proc(Tracer *tracer);
 
