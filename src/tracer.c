@@ -95,7 +95,7 @@ static pid_t start_tracee(const char *pathname, char *const *args) {
 #define STOPPED_BY_SYSCALL(status) (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80)
 #define STOP_WAITING(tracer) {tracer->source_id = 0; return G_SOURCE_REMOVE;}
 
-static gboolean wait_source_func(gpointer data) {
+static gboolean tracer_wait_source_func(gpointer data) {
     Tracer *tracer = (Tracer*) data;
     if (tracer->child_proc <= 0) STOP_WAITING(tracer)
 
@@ -103,36 +103,7 @@ static gboolean wait_source_func(gpointer data) {
     if (waitpid(tracer->child_proc, &status, WNOHANG) == 0) {
         return G_SOURCE_CONTINUE;
     }
-
-    if (STOPPED_BY_SYSCALL(status)) {
-        struct ptrace_syscall_info sc_info;
-        ptrace(PTRACE_GET_SYSCALL_INFO, tracer->child_proc, sizeof(sc_info), &sc_info);
-        switch (sc_info.op) {
-            case PTRACE_SYSCALL_INFO_ENTRY:
-                tracer->syscall_buffer.has_retval = FALSE;
-                tracer->syscall_buffer.number = sc_info.entry.nr;
-                for (int i = 0; i < 6; ++i)
-                    tracer->syscall_buffer.args[i] = sc_info.entry.args[i];
-                ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
-                return G_SOURCE_CONTINUE;
-
-            case PTRACE_SYSCALL_INFO_EXIT:
-                tracer->syscall_buffer.retval = sc_info.exit.rval;
-                tracer->syscall_buffer.has_retval = TRUE;
-                tracer_queue_syscall(tracer);
-                if (!tracer->continuous) STOP_WAITING(tracer)
-                break;
-
-            case PTRACE_SYSCALL_INFO_SECCOMP:
-                tracer->syscall_buffer.number = sc_info.seccomp.nr;
-                for (int i = 0; i < 6; ++i)
-                    tracer->syscall_buffer.args[i] = sc_info.seccomp.args[i];
-                tracer->syscall_buffer.retval = sc_info.seccomp.ret_data;
-                tracer->syscall_buffer.has_retval = TRUE;
-                tracer_queue_syscall(tracer);
-                if (!tracer->continuous) STOP_WAITING(tracer)
-        }
-    } else if (WIFEXITED(status)) {
+    if (WIFEXITED(status)) {
         tracer_queue_syscall(tracer);
         tracer_queue_exit(tracer, WEXITSTATUS(status));
         tracer->child_proc = 0;
@@ -141,8 +112,35 @@ static gboolean wait_source_func(gpointer data) {
         tracer_queue_term(tracer, WTERMSIG(status));
         tracer->child_proc = 0;
         STOP_WAITING(tracer)
+    } else if (STOPPED_BY_SYSCALL(status)) {
+        struct ptrace_syscall_info sc_info;
+        ptrace(PTRACE_GET_SYSCALL_INFO, tracer->child_proc, sizeof(sc_info), &sc_info);
+        switch (sc_info.op) {
+            case PTRACE_SYSCALL_INFO_NONE:
+                ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
+                return G_SOURCE_CONTINUE;
+            case PTRACE_SYSCALL_INFO_ENTRY:
+                tracer->syscall_buffer.has_retval = FALSE;
+                tracer->syscall_buffer.number = sc_info.entry.nr;
+                for (int i = 0; i < 6; ++i)
+                    tracer->syscall_buffer.args[i] = sc_info.entry.args[i];
+                ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
+                return G_SOURCE_CONTINUE;
+            case PTRACE_SYSCALL_INFO_EXIT:
+                tracer->syscall_buffer.retval = sc_info.exit.rval;
+                tracer->syscall_buffer.has_retval = TRUE;
+                break;
+            case PTRACE_SYSCALL_INFO_SECCOMP:
+                tracer->syscall_buffer.number = sc_info.seccomp.nr;
+                for (int i = 0; i < 6; ++i)
+                    tracer->syscall_buffer.args[i] = sc_info.seccomp.args[i];
+                tracer->syscall_buffer.retval = sc_info.seccomp.ret_data;
+                tracer->syscall_buffer.has_retval = TRUE;
+                break;
+        }
+        tracer_queue_syscall(tracer);
+        if (!tracer->continuous) STOP_WAITING(tracer)
     }
-
     ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
     return G_SOURCE_CONTINUE;
 }
@@ -156,7 +154,7 @@ gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous) {
         tracer->continuous = continuous;
         g_queue_clear_full(&tracer->trace_queue, g_free);
         ptrace(PTRACE_SYSCALL, child, 0, 0);
-        tracer->source_id = g_idle_add(wait_source_func, tracer);
+        tracer->source_id = g_idle_add(tracer_wait_source_func, tracer);
         return TRUE;
     } else return FALSE;
 }
@@ -164,6 +162,6 @@ gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous) {
 void tracer_trace_next(Tracer *tracer) {
     if (tracer->child_proc > 0 && tracer->source_id == 0) {
         ptrace(PTRACE_SYSCALL, tracer->child_proc, 0, 0);
-        tracer->source_id = g_idle_add(wait_source_func, tracer);
+        tracer->source_id = g_idle_add(tracer_wait_source_func, tracer);
     }
 }
