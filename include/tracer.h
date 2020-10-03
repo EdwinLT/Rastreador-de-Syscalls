@@ -39,3 +39,5 @@ void tracer_kill_child_proc(Tracer *tracer);
 void tracer_trace_next(Tracer *tracer);
 
 TraceResult *tracer_pop_queued_result(Tracer *tracer);
+
+GQueue tracer_get_queued_results(Tracer *tracer);

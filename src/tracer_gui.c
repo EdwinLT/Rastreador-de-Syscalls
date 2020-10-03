@@ -257,8 +257,9 @@ static gboolean on_chart_clicked(GtkWidget *widget, GdkEventButton *event, gpoin
 #define REFRESH_INTERVAL (1000 / 30)
 static gboolean refresh_gui_source_func(gpointer data) {
     TracerGui *gui = data;
+    GQueue queue = tracer_get_queued_results(gui->tracer);
     TraceResult *trace;
-    while (trace = tracer_pop_queued_result(gui->tracer)) {
+    while (trace = g_queue_pop_head(&queue)) {
         switch (trace->type) {
             case TRACEE_SYSCALL:
                 tracer_gui_log_syscall(gui, &trace->syscall);
