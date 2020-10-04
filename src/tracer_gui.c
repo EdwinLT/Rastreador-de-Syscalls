@@ -173,7 +173,7 @@ static void tracer_gui_draw_pie_chart(TracerGui *gui, cairo_t *cr, double radius
     GtkTreeModel *model = GTK_TREE_MODEL(gui->chart_liststore);
 
     GtkTreeIter iter;
-    double start_angle = 0.0;
+    double start_angle = -G_PI;
     gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
     while (valid) {
         gint64 sysno;
@@ -228,10 +228,10 @@ static gboolean on_chart_clicked(GtkWidget *widget, GdkEventButton *event, gpoin
         TracerGui *gui = data;
 
         if (sqrt(x*x + y*y) <= gui->chart_radius) {
-            gdouble click_angle = fmod(atan2(y, x)+TAU, TAU);
+            gdouble click_angle = atan2(y, x);
             GtkTreeModel *tm = GTK_TREE_MODEL(gui->chart_liststore);
             GtkTreeIter iter;
-            gdouble iter_angle = 0.0;
+            gdouble iter_angle = -G_PI;
             gboolean valid = gtk_tree_model_get_iter_first(tm, &iter);
             while (valid) {
                 gdouble percent;
