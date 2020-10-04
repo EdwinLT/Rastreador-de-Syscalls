@@ -32,10 +32,12 @@ Tracer *tracer_new();
 
 void tracer_free(Tracer *tracer);
 
-gboolean tracer_start_trace(Tracer *tracer, gchar **args, gboolean continuous);
+gboolean tracer_start_trace_async(Tracer *tracer, gchar **args, gboolean continuous);
 
 void tracer_kill_child_proc(Tracer *tracer);
 
 void tracer_trace_next(Tracer *tracer);
 
 TraceResult *tracer_pop_queued_result(Tracer *tracer);
+
+GQueue tracer_get_queued_results(Tracer *tracer);

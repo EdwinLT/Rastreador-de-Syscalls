@@ -133,7 +133,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
         const char *mode_id = gtk_combo_box_get_active_id(gui->mode_combobox);
         gboolean continuous = (g_strcmp0(mode_id, "CONTINUOUS") == 0);
 
-        if (tracer_start_trace(gui->tracer, argv, continuous)) {
+        if (tracer_start_trace_async(gui->tracer, argv, continuous)) {
             gui->syscall_counter = 0UL;
             gtk_list_store_clear(gui->log_liststore);
             gtk_list_store_clear(gui->stats_liststore);
@@ -257,8 +257,9 @@ static gboolean on_chart_clicked(GtkWidget *widget, GdkEventButton *event, gpoin
 #define REFRESH_INTERVAL (1000 / 30)
 static gboolean refresh_gui_source_func(gpointer data) {
     TracerGui *gui = data;
+    GQueue queue = tracer_get_queued_results(gui->tracer);
     TraceResult *trace;
-    while (trace = tracer_pop_queued_result(gui->tracer)) {
+    while (trace = g_queue_pop_head(&queue)) {
         switch (trace->type) {
             case TRACEE_SYSCALL:
                 tracer_gui_log_syscall(gui, &trace->syscall);
