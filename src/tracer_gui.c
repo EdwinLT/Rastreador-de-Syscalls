@@ -8,18 +8,18 @@
 #include <math.h>
 #include <gtk/gtk.h>
 
+#define DEBUG_PRINT printf("%s, %d\n", __FILE__, __LINE__)
+
 typedef struct TracerGui {
     Tracer *tracer;
 
     GtkWindow *main_window;
-    GtkStack *main_stack;
-    GtkStack *process_stack;
+    GtkBox *input_box;
+    GtkButtonBox *proc_control_box;
     GtkEntry *command_entry;
     GtkComboBox *mode_combobox;
     GtkButton *start_button;
-    GtkButton *back_button;
     GtkButton *next_syscall_button;
-    GtkButtonBox *proc_control_box;
     GtkTreeView *log_treeview;
     GtkTreeView *stats_treeview;
     GtkTreeView *chart_legend;
@@ -76,6 +76,7 @@ static void tracer_gui_log_syscall(TracerGui *gui, SyscallInfo *syscall) {
 }
 
 static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
+    gtk_list_store_clear(gui->chart_liststore);
     GtkTreeModel *stats_model = GTK_TREE_MODEL(gui->stats_liststore);
     guint n = gtk_tree_model_iter_n_children(stats_model, NULL);
     double *hues = create_n_hues(n, TRUE);
@@ -111,8 +112,9 @@ static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
 }
 
 static void tracer_gui_finish_trace(TracerGui *gui) {
-    gtk_widget_set_sensitive(GTK_WIDGET(gui->back_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(gui->proc_control_box), FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), TRUE);
+    gtk_widget_grab_default(GTK_WIDGET(gui->start_button));
     tracer_gui_set_pie_chart_data(gui);
 }
 
@@ -139,10 +141,8 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
             gtk_list_store_clear(gui->stats_liststore);
             gtk_list_store_clear(gui->chart_liststore);
             gtk_widget_set_visible(GTK_WIDGET(gui->next_syscall_button), !continuous);
-            gtk_widget_set_sensitive(GTK_WIDGET(gui->back_button), FALSE);
+            gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), FALSE);
             gtk_widget_set_sensitive(GTK_WIDGET(gui->proc_control_box), TRUE);
-            gtk_stack_set_visible_child_name(gui->process_stack, "tables_view");
-            gtk_stack_set_visible_child_name(gui->main_stack, "process_view");
             gtk_widget_grab_default(GTK_WIDGET(gui->next_syscall_button));
         }
 
@@ -161,11 +161,11 @@ void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {
     gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
 }
 
-void on_back_button_clicked(GtkButton *btn, gpointer data) {
+void on_close_button_clicked(GtkButton *btn, gpointer data) {
     TracerGui *gui = data;
-    gtk_stack_set_visible_child_name(gui->main_stack, "start_page");
-    gtk_widget_grab_default(GTK_WIDGET(gui->start_button));
+    gtk_widget_destroy(GTK_WIDGET(gui->main_window));
 }
+
 
 #define TAU (2 * G_PI)
 
@@ -185,9 +185,13 @@ static void tracer_gui_draw_pie_chart(TracerGui *gui, cairo_t *cr, double radius
             -1
         );
 
-        double slice_radius = radius;
+        double slice_radius;
         if (gtk_tree_selection_iter_is_selected(gui->chart_selection, &iter)) {
+            cairo_set_line_width(cr, 2.0);
             slice_radius = radius_selected;
+        } else {
+            cairo_set_line_width(cr, 1.0);
+            slice_radius = radius;
         }
 
         double end_angle = start_angle + (percent/100.0)*(TAU);
@@ -212,7 +216,7 @@ gboolean on_chart_drawing_area_draw(GtkWidget *widget, cairo_t *cr, gpointer dat
     double r = fmin(half_width, half_height);
     cairo_translate(cr, half_width, half_height);
     cairo_set_line_width(cr, 1.0);
-    tracer_gui_draw_pie_chart(data, cr, r * 0.9, r * 0.96);
+    tracer_gui_draw_pie_chart(data, cr, r * 0.85, r * 0.95);
     return FALSE;
 }
 
@@ -258,22 +262,24 @@ static gboolean on_chart_clicked(GtkWidget *widget, GdkEventButton *event, gpoin
 static gboolean refresh_gui_source_func(gpointer data) {
     TracerGui *gui = data;
     GQueue queue = tracer_get_queued_results(gui->tracer);
-    TraceResult *trace;
-    while (trace = g_queue_pop_head(&queue)) {
-        switch (trace->type) {
-            case TRACEE_SYSCALL:
-                tracer_gui_log_syscall(gui, &trace->syscall);
-                break;
-            case TRACEE_EXIT:
-                printf("Exit status: %d\n", trace->exit_status);
-                tracer_gui_finish_trace(gui);
-                break;
-            case TRACEE_TERMINATED:
-                printf("Stop signal: %d\n", trace->term_signal);
-                tracer_gui_finish_trace(gui);
-                break;
+    if (queue.length > 0) {
+        TraceResult *trace;
+        while (trace = g_queue_pop_head(&queue)) {
+            switch (trace->type) {
+                case TRACEE_SYSCALL:
+                    tracer_gui_log_syscall(gui, &trace->syscall);
+                    break;
+                case TRACEE_EXIT:
+                    printf("Exit status: %d\n", trace->exit_status);
+                    tracer_gui_finish_trace(gui);
+                    break;
+                case TRACEE_TERMINATED:
+                    printf("Stop signal: %d\n", trace->term_signal);
+                    tracer_gui_finish_trace(gui);
+                    break;
+            }
+            g_free(trace);
         }
-        g_free(trace);
     }
     return G_SOURCE_CONTINUE;
 }
@@ -284,14 +290,12 @@ static void tracer_gui_init_widgets(TracerGui *gui) {
     gtk_builder_connect_signals(builder, gui);
 
     GUI_BIND_OBJECT(gui, builder, GTK_WINDOW, main_window);
-    GUI_BIND_OBJECT(gui, builder, GTK_STACK, main_stack);
-    GUI_BIND_OBJECT(gui, builder, GTK_STACK, process_stack);
+    GUI_BIND_OBJECT(gui, builder, GTK_BOX, input_box);
+    GUI_BIND_OBJECT(gui, builder, GTK_BUTTON_BOX, proc_control_box);
     GUI_BIND_OBJECT(gui, builder, GTK_ENTRY, command_entry);
     GUI_BIND_OBJECT(gui, builder, GTK_COMBO_BOX, mode_combobox);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, start_button);
-    GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, back_button);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, next_syscall_button);
-    GUI_BIND_OBJECT(gui, builder, GTK_BUTTON_BOX, proc_control_box);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, log_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, stats_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, chart_legend);

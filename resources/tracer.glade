@@ -20,11 +20,6 @@
       <column type="gdouble"/>
     </columns>
   </object>
-  <object class="GtkImage" id="execute_icon">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-execute</property>
-  </object>
   <object class="GtkListStore" id="log_liststore">
     <columns>
       <!-- column-name Index -->
@@ -73,167 +68,37 @@
       <placeholder/>
     </child>
     <child>
-      <object class="GtkStack" id="main_stack">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="margin_top">8</property>
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkFrame" id="start_page">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="halign">center</property>
-            <property name="valign">center</property>
-            <property name="margin_left">32</property>
-            <property name="margin_right">32</property>
-            <property name="margin_top">32</property>
-            <property name="margin_bottom">32</property>
-            <property name="label_xalign">0.5</property>
-            <property name="shadow_type">out</property>
+            <property name="margin_left">8</property>
+            <property name="margin_right">8</property>
+            <property name="margin_top">8</property>
+            <property name="margin_bottom">8</property>
+            <property name="spacing">4</property>
             <child>
-              <object class="GtkAlignment">
+              <object class="GtkBox" id="input_box">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="top_padding">8</property>
-                <property name="bottom_padding">12</property>
-                <property name="left_padding">12</property>
-                <property name="right_padding">12</property>
+                <property name="spacing">4</property>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkComboBox" id="mode_combobox">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">16</property>
+                    <property name="model">mode_liststore</property>
+                    <property name="active">0</property>
+                    <property name="id_column">0</property>
                     <child>
-                      <object class="GtkGrid">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="row_spacing">4</property>
-                        <property name="column_spacing">15</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="label" translatable="yes">Comando: </property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="label" translatable="yes">Modo de ejecución: </property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkEntry" id="command_entry">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="hexpand">True</property>
-                            <property name="activates_default">True</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">1</property>
-                            <property name="top_attach">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkComboBox" id="mode_combobox">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="hexpand">True</property>
-                            <property name="model">mode_liststore</property>
-                            <property name="active">0</property>
-                            <property name="id_column">0</property>
-                            <child>
-                              <object class="GtkCellRendererText"/>
-                              <attributes>
-                                <attribute name="text">1</attribute>
-                              </attributes>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="left_attach">1</property>
-                            <property name="top_attach">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
+                      <object class="GtkCellRendererText"/>
+                      <attributes>
+                        <attribute name="text">1</attribute>
+                      </attributes>
                     </child>
-                    <child>
-                      <object class="GtkButton" id="start_button">
-                        <property name="label">gtk-execute</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="can_default">True</property>
-                        <property name="has_default">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="halign">center</property>
-                        <property name="use_stock">True</property>
-                        <signal name="clicked" handler="on_start_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <child type="label">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Rastreador de System Calls</property>
-                <property name="justify">center</property>
-                <attributes>
-                  <attribute name="font-desc" value="Sans Bold 24"/>
-                </attributes>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="name">start_page</property>
-            <property name="title" translatable="yes">page0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox" id="process_view">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">8</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="margin_left">8</property>
-                <property name="margin_right">8</property>
-                <property name="spacing">8</property>
-                <child>
-                  <object class="GtkButton" id="back_button">
-                    <property name="label">Nuevo programa</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="image">execute_icon</property>
-                    <signal name="clicked" handler="on_back_button_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -241,55 +106,49 @@
                     <property name="position">0</property>
                   </packing>
                 </child>
-                <child type="center">
-                  <object class="GtkStackSwitcher">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="halign">center</property>
-                    <property name="stack">process_stack</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
                 <child>
-                  <object class="GtkButtonBox" id="proc_control_box">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="halign">end</property>
-                    <property name="homogeneous">True</property>
-                    <property name="layout_style">expand</property>
                     <child>
-                      <object class="GtkButton" id="next_syscall_button">
-                        <property name="label">gtk-media-next</property>
+                      <object class="GtkEntry" id="command_entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="can_default">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="use_stock">True</property>
-                        <signal name="clicked" handler="on_next_syscall_button_clicked" swapped="no"/>
+                        <property name="has_focus">True</property>
+                        <property name="activates_default">True</property>
+                        <property name="primary_icon_stock">gtk-execute</property>
+                        <property name="placeholder_text" translatable="yes">Comando</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
                         <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="stop_button">
-                        <property name="label">gtk-stop</property>
+                      <object class="GtkButton" id="start_button">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
+                        <property name="can_default">True</property>
+                        <property name="has_default">True</property>
                         <property name="receives_default">True</property>
-                        <property name="use_stock">True</property>
-                        <signal name="clicked" handler="on_stop_button_clicked" swapped="no"/>
+                        <property name="halign">center</property>
+                        <property name="always_show_image">True</property>
+                        <signal name="clicked" handler="on_start_button_clicked" swapped="no"/>
+                        <child>
+                          <object class="GtkImage" id="image1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="can_default">True</property>
+                            <property name="has_default">True</property>
+                            <property name="stock">gtk-media-play</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
+                        <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">2</property>
+                        <property name="position">1</property>
                       </packing>
                     </child>
                     <style>
@@ -297,15 +156,299 @@
                     </style>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
+                    <property name="expand">True</property>
                     <property name="fill">True</property>
-                    <property name="pack_type">end</property>
-                    <property name="position">3</property>
+                    <property name="position">1</property>
                   </packing>
                 </child>
               </object>
               <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButtonBox" id="proc_control_box">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="halign">end</property>
+                <property name="homogeneous">True</property>
+                <property name="layout_style">expand</property>
+                <child>
+                  <object class="GtkButton" id="next_syscall_button">
+                    <property name="label">gtk-media-next</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="can_default">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <signal name="clicked" handler="on_next_syscall_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="stop_button">
+                    <property name="label">gtk-stop</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <signal name="clicked" handler="on_stop_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <style>
+                  <class name="linked"/>
+                </style>
+              </object>
+              <packing>
                 <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">8</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="close_button">
+                <property name="label">gtk-close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <signal name="clicked" handler="on_close_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="spacing">3</property>
+            <property name="homogeneous">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">3</property>
+                <child>
+                  <object class="GtkFrame">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label_xalign">0.5</property>
+                    <property name="label_yalign">0</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkAlignment">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkScrolledWindow">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <object class="GtkTreeView" id="log_treeview">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="model">log_liststore</property>
+                                <property name="enable_search">False</property>
+                                <property name="search_column">0</property>
+                                <property name="show_expanders">False</property>
+                                <property name="enable_grid_lines">horizontal</property>
+                                <child internal-child="selection">
+                                  <object class="GtkTreeSelection"/>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn">
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">#</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">0</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn">
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">Código</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">1</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn">
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">Nombre</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">2</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_top">4</property>
+                        <property name="margin_bottom">4</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Bitácora&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                        <property name="justify">center</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label_xalign">0.5</property>
+                    <property name="label_yalign">0</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkAlignment">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkScrolledWindow">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <object class="GtkTreeView" id="stats_treeview">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="model">stats_liststore</property>
+                                <property name="enable_search">False</property>
+                                <property name="search_column">0</property>
+                                <property name="show_expanders">False</property>
+                                <property name="enable_grid_lines">both</property>
+                                <child internal-child="selection">
+                                  <object class="GtkTreeSelection"/>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn">
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">Syscall</property>
+                                    <property name="clickable">True</property>
+                                    <property name="sort_indicator">True</property>
+                                    <property name="sort_column_id">1</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">1</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn">
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">Cantidad</property>
+                                    <property name="clickable">True</property>
+                                    <property name="sort_indicator">True</property>
+                                    <property name="sort_order">descending</property>
+                                    <property name="sort_column_id">2</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">2</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_top">4</property>
+                        <property name="margin_bottom">4</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Tabla Acumulada&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                        <property name="justify">center</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
@@ -314,304 +457,104 @@
               <object class="GtkFrame">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label_xalign">0</property>
-                <property name="label_yalign">1</property>
+                <property name="label_xalign">0.5</property>
+                <property name="label_yalign">0</property>
                 <property name="shadow_type">in</property>
                 <child>
                   <object class="GtkAlignment">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkStack" id="process_stack">
+                      <object class="GtkBox" id="chart_view">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
-                          <object class="GtkPaned" id="logs_view">
+                          <object class="GtkScrolledWindow">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="wide_handle">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <property name="window_placement">top-right</property>
                             <child>
-                              <object class="GtkFrame">
-                                <property name="width_request">250</property>
+                              <object class="GtkTreeView" id="chart_legend">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label_xalign">0.5</property>
-                                <property name="label_yalign">0</property>
-                                <property name="shadow_type">none</property>
+                                <property name="can_focus">True</property>
+                                <property name="model">chart_liststore</property>
+                                <property name="headers_visible">False</property>
+                                <property name="search_column">0</property>
+                                <child internal-child="selection">
+                                  <object class="GtkTreeSelection" id="chart_selection">
+                                    <signal name="changed" handler="on_chart_selection_changed" swapped="no"/>
+                                  </object>
+                                </child>
                                 <child>
-                                  <object class="GtkAlignment">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
+                                  <object class="GtkTreeViewColumn" id="label_column">
+                                    <property name="spacing">4</property>
+                                    <property name="sizing">autosize</property>
+                                    <property name="min_width">128</property>
+                                    <property name="title" translatable="yes">Syscalls</property>
+                                    <property name="expand">True</property>
+                                    <property name="sort_order">descending</property>
                                     <child>
-                                      <object class="GtkScrolledWindow">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <child>
-                                          <object class="GtkTreeView" id="log_treeview">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="model">log_liststore</property>
-                                            <property name="enable_search">False</property>
-                                            <property name="search_column">0</property>
-                                            <property name="show_expanders">False</property>
-                                            <property name="enable_grid_lines">horizontal</property>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection"/>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <property name="sizing">autosize</property>
-                                                <property name="title" translatable="yes">#</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <attributes>
-                                                    <attribute name="text">0</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <property name="sizing">autosize</property>
-                                                <property name="title" translatable="yes">Código</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <property name="sizing">autosize</property>
-                                                <property name="title" translatable="yes">Nombre</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <attributes>
-                                                    <attribute name="text">2</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                          </object>
-                                        </child>
+                                      <object class="GtkCellRendererText" id="color_renderer">
+                                        <property name="text">██</property>
+                                      </object>
+                                      <attributes>
+                                        <attribute name="cell-background-rgba">3</attribute>
+                                        <attribute name="background-rgba">3</attribute>
+                                        <attribute name="foreground-rgba">3</attribute>
+                                      </attributes>
+                                    </child>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="label_renderer"/>
+                                      <attributes>
+                                        <attribute name="text">1</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn" id="percent_column">
+                                    <property name="visible">False</property>
+                                    <property name="sizing">autosize</property>
+                                    <property name="title" translatable="yes">Porcentaje</property>
+                                    <property name="clickable">True</property>
+                                    <property name="sort_order">descending</property>
+                                    <property name="sort_column_id">2</property>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="percent_num_renderer">
+                                        <property name="xalign">1</property>
+                                      </object>
+                                      <attributes>
+                                        <attribute name="text">2</attribute>
+                                      </attributes>
+                                    </child>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="percent_sign_renderer">
+                                        <property name="text">%</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
-                                <child type="label">
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="margin_left">4</property>
-                                    <property name="margin_right">4</property>
-                                    <property name="margin_top">4</property>
-                                    <property name="margin_bottom">4</property>
-                                    <property name="label" translatable="yes">&lt;big&gt;Bitácora&lt;/big&gt;</property>
-                                    <property name="use_markup">True</property>
-                                    <property name="justify">center</property>
-                                  </object>
-                                </child>
                               </object>
-                              <packing>
-                                <property name="resize">True</property>
-                                <property name="shrink">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkFrame">
-                                <property name="width_request">250</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label_xalign">0.5</property>
-                                <property name="label_yalign">0</property>
-                                <property name="shadow_type">none</property>
-                                <child>
-                                  <object class="GtkAlignment">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <child>
-                                      <object class="GtkScrolledWindow">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <child>
-                                          <object class="GtkTreeView" id="stats_treeview">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="model">stats_liststore</property>
-                                            <property name="enable_search">False</property>
-                                            <property name="search_column">0</property>
-                                            <property name="show_expanders">False</property>
-                                            <property name="enable_grid_lines">both</property>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection"/>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <property name="sizing">autosize</property>
-                                                <property name="title" translatable="yes">Syscall</property>
-                                                <property name="clickable">True</property>
-                                                <property name="sort_indicator">True</property>
-                                                <property name="sort_column_id">1</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <property name="sizing">autosize</property>
-                                                <property name="title" translatable="yes">Cantidad</property>
-                                                <property name="clickable">True</property>
-                                                <property name="sort_indicator">True</property>
-                                                <property name="sort_order">descending</property>
-                                                <property name="sort_column_id">2</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <attributes>
-                                                    <attribute name="text">2</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child type="label">
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="margin_left">4</property>
-                                    <property name="margin_right">4</property>
-                                    <property name="margin_top">4</property>
-                                    <property name="margin_bottom">4</property>
-                                    <property name="label" translatable="yes">&lt;big&gt;Tabla acumulada&lt;/big&gt;</property>
-                                    <property name="use_markup">True</property>
-                                    <property name="justify">center</property>
-                                  </object>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="resize">True</property>
-                                <property name="shrink">False</property>
-                              </packing>
                             </child>
                           </object>
                           <packing>
-                            <property name="name">tables_view</property>
-                            <property name="title" translatable="yes">Bitácora</property>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox" id="chart_view">
+                          <object class="GtkDrawingArea" id="chart_drawing_area">
+                            <property name="width_request">150</property>
+                            <property name="height_request">150</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <child>
-                              <object class="GtkScrolledWindow">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="hscrollbar_policy">never</property>
-                                <property name="vscrollbar_policy">always</property>
-                                <property name="window_placement">top-right</property>
-                                <property name="overlay_scrolling">False</property>
-                                <child>
-                                  <object class="GtkTreeView" id="chart_legend">
-                                    <property name="width_request">175</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="model">chart_liststore</property>
-                                    <property name="headers_visible">False</property>
-                                    <property name="search_column">0</property>
-                                    <child internal-child="selection">
-                                      <object class="GtkTreeSelection" id="chart_selection">
-                                        <signal name="changed" handler="on_chart_selection_changed" swapped="no"/>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkTreeViewColumn" id="label_column">
-                                        <property name="spacing">4</property>
-                                        <property name="sizing">autosize</property>
-                                        <property name="min_width">128</property>
-                                        <property name="title" translatable="yes">Syscalls</property>
-                                        <property name="expand">True</property>
-                                        <property name="sort_order">descending</property>
-                                        <child>
-                                          <object class="GtkCellRendererText" id="color_renderer">
-                                            <property name="text">██</property>
-                                          </object>
-                                          <attributes>
-                                            <attribute name="cell-background-rgba">3</attribute>
-                                            <attribute name="background-rgba">3</attribute>
-                                            <attribute name="foreground-rgba">3</attribute>
-                                          </attributes>
-                                        </child>
-                                        <child>
-                                          <object class="GtkCellRendererText" id="label_renderer"/>
-                                          <attributes>
-                                            <attribute name="text">1</attribute>
-                                          </attributes>
-                                        </child>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkTreeViewColumn" id="percent_column">
-                                        <property name="sizing">autosize</property>
-                                        <property name="title" translatable="yes">Porcentaje</property>
-                                        <property name="sort_order">descending</property>
-                                        <property name="sort_column_id">2</property>
-                                        <child>
-                                          <object class="GtkCellRendererText" id="percent_num_renderer">
-                                            <property name="xalign">1</property>
-                                          </object>
-                                          <attributes>
-                                            <attribute name="text">2</attribute>
-                                          </attributes>
-                                        </child>
-                                        <child>
-                                          <object class="GtkCellRendererText" id="percent_sign_renderer">
-                                            <property name="text">%</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkDrawingArea" id="chart_drawing_area">
-                                <property name="width_request">250</property>
-                                <property name="height_request">250</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="margin_left">4</property>
-                                <property name="margin_right">4</property>
-                                <property name="margin_top">4</property>
-                                <property name="margin_bottom">4</property>
-                                <signal name="draw" handler="on_chart_drawing_area_draw" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
+                            <signal name="draw" handler="on_chart_drawing_area_draw" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="name">graph_view</property>
-                            <property name="title" translatable="yes">Gráfico</property>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
@@ -619,8 +562,19 @@
                     </child>
                   </object>
                 </child>
-                <child type="label_item">
-                  <placeholder/>
+                <child type="label">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="valign">center</property>
+                    <property name="margin_left">4</property>
+                    <property name="margin_right">4</property>
+                    <property name="margin_top">4</property>
+                    <property name="margin_bottom">4</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Gráfico de Pastel&lt;/b&gt;</property>
+                    <property name="use_markup">True</property>
+                    <property name="justify">center</property>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -631,9 +585,9 @@
             </child>
           </object>
           <packing>
-            <property name="name">process_view</property>
-            <property name="title" translatable="yes">Process</property>
-            <property name="position">1</property>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </object>
