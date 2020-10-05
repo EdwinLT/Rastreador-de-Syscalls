@@ -23,13 +23,16 @@ $ ./rastreador
 Ingrese un comando en el campo de texto en la parte superior de la ventana y presione el botón de play para ejecutarlo.
 Con el combobox a la izquierda puede escoger si quiere correr el programa en modo continuo o pausado.
 
-En el lado izquierdo de la ventana se encuentra la bitácora.
-
 Si se ejecuta en modo pausado, utilice el botón 'Next' para continuar la ejecución después de cada system call.
 En cualquier momento durante la ejecución, puede presionar el botón 'Stop' para matar el proceso que se está rastreando.
 
+![Image](screenshots/rastreador-resultados.png)
+
+En el lado izquierdo de la ventana se encuentra la bitácora.
 En el lado derecho de la ventana se encuentran las estadísticas del programa.
 Por defecto se muestra la tabla acumulada con la cantidad de invocaciones de cada tipo de system call.
+
+![Image](screenshots/rastreador-grafico.png)
 
 Una vez que finalice la ejecución de su programa, puede hacer clic en la pestaña 'Gráfico'
 que se encuentra debajo de la tabla para mostrar los datos en un gráfico de pastel.
