@@ -83,13 +83,13 @@ static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
     while (valid) {
         gint64 sysno; guint count;
         gtk_tree_model_get(stats_model, &iter, STATS_COL_SYSNO, &sysno, STATS_COL_COUNT, &count, -1);
-        gdouble percent = (gdouble) count / gui->syscall_counter * 100.0;
+        gdouble proportion = (gdouble) count / gui->syscall_counter;
 
         GdkRGBA rgba = hsv_to_rgb(hues[i], 0.62, 0.9);
         gtk_list_store_insert_with_values(gui->chart_liststore, NULL, -1,
             CHART_COL_SYSNO, sysno,
             CHART_COL_NAME, syscall_name(sysno),
-            CHART_COL_PERCENT, percent, 
+            CHART_COL_PROPORTION, proportion, 
             CHART_COL_RGBA, &rgba,
             // Because of a bug in gtk, we can't properly retrieve the GdkRGBA
             // To get around this, we store the r, g, and b separately as well
@@ -174,10 +174,10 @@ static void tracer_gui_draw_pie_chart(TracerGui *gui, cairo_t *cr, double radius
     gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
     while (valid) {
         gint64 sysno;
-        gdouble percent;
+        gdouble proportion;
         gdouble r, g, b;
         gtk_tree_model_get(model, &iter,
-            CHART_COL_SYSNO, &sysno, CHART_COL_PERCENT, &percent,
+            CHART_COL_SYSNO, &sysno, CHART_COL_PROPORTION, &proportion,
             CHART_COL_R, &r, CHART_COL_G, &g, CHART_COL_B, &b,
             -1
         );
@@ -191,7 +191,7 @@ static void tracer_gui_draw_pie_chart(TracerGui *gui, cairo_t *cr, double radius
             slice_radius = radius;
         }
 
-        double end_angle = start_angle + (percent/100.0)*(TAU);
+        double end_angle = start_angle + proportion * TAU;
         cairo_move_to(cr, 0.0, 0.0);
         cairo_arc(cr, 0.0, 0.0, slice_radius, start_angle, end_angle);
         cairo_line_to(cr, 0.0, 0.0);
@@ -235,10 +235,10 @@ static gboolean on_chart_clicked(GtkWidget *widget, GdkEventButton *event, gpoin
             gdouble iter_angle = -G_PI;
             gboolean valid = gtk_tree_model_get_iter_first(tm, &iter);
             while (valid) {
-                gdouble percent;
-                gtk_tree_model_get(tm, &iter, CHART_COL_PERCENT, &percent, -1);
+                gdouble proportion;
+                gtk_tree_model_get(tm, &iter, CHART_COL_PROPORTION, &proportion, -1);
 
-                gdouble end_angle = iter_angle + (percent/100.0)*(TAU);
+                gdouble end_angle = iter_angle + proportion * TAU;
                 if (iter_angle <= click_angle && click_angle <= end_angle) {
                     GtkTreePath *path = gtk_tree_model_get_path(tm, &iter);
                     gtk_tree_selection_select_iter(gui->chart_selection, &iter);
@@ -304,7 +304,7 @@ static void tracer_gui_init_widgets(TracerGui *gui) {
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_SELECTION, chart_selection);
     GUI_BIND_OBJECT(gui, builder, GTK_WIDGET, chart_drawing_area);
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(gui->chart_liststore),
-                                         CHART_COL_PERCENT, GTK_SORT_DESCENDING);
+                                         CHART_COL_PROPORTION, GTK_SORT_DESCENDING);
     gtk_widget_add_events(gui->chart_drawing_area, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(gui->chart_drawing_area, "button-press-event", 
                      G_CALLBACK(on_chart_clicked), gui);

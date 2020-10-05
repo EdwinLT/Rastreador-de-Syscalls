@@ -11,10 +11,10 @@
 #define STATS_COL_COUNT 2
 
 // Column numbers for the pie chart's tree model
-#define CHART_COL_SYSNO   0
-#define CHART_COL_NAME    1
-#define CHART_COL_PERCENT 2
-#define CHART_COL_RGBA    3
-#define CHART_COL_R       4
-#define CHART_COL_G       5
-#define CHART_COL_B       6
+#define CHART_COL_SYSNO      0
+#define CHART_COL_NAME       1
+#define CHART_COL_PROPORTION 2
+#define CHART_COL_RGBA       3
+#define CHART_COL_R          4
+#define CHART_COL_G          5
+#define CHART_COL_B          6

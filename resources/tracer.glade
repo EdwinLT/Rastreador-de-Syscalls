@@ -8,7 +8,7 @@
       <column type="gint64"/>
       <!-- column-name Name -->
       <column type="gchararray"/>
-      <!-- column-name Percent -->
+      <!-- column-name Proportion -->
       <column type="gdouble"/>
       <!-- column-name RGBA -->
       <column type="GdkRGBA"/>
