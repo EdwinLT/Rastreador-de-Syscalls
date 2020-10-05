@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-GdkRGBA hsv_to_rgb(double h, double s, double v) {
+GdkRGBA hsv_to_rgb(gdouble h, gdouble s, gdouble v) {
     h = fmod(h, 360);
-    double c = v * s;
-    double x = c * (1 - fabs(fmod(h / 60, 2) - 1));
-    double m = v - c;
+    gdouble c = v * s;
+    gdouble x = c * (1 - fabs(fmod(h / 60, 2) - 1));
+    gdouble m = v - c;
 
     int region = (int) floor(h / 60.0);
     switch (region) {
@@ -22,21 +22,17 @@ GdkRGBA hsv_to_rgb(double h, double s, double v) {
     }
 }
 
-double *create_n_hues(guint n, gboolean shuffle) {
-    double *hues = malloc(n * sizeof(double));
-
+void create_n_hues(guint n, gboolean shuffle, gdouble *output) {
     for (guint i = 0; i < n; i++) {
-        hues[i] = 360.0 * ((double) i / n);
+        output[i] = 360.0 * ((gdouble) i / n);
     }
 
     if (shuffle && n > 1) {
         for (guint i = n - 1; i > 0; i--) {
             guint j = (guint) (rand() % (i + 1));
-            double temp = hues[i];
-            hues[i] = hues[j];
-            hues[j] = temp;
+            gdouble temp = output[i];
+            output[i] = output[j];
+            output[j] = temp;
         }
     }
-
-    return hues;
 }

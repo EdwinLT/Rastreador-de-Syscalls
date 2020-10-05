@@ -76,7 +76,8 @@ static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
     gtk_list_store_clear(gui->chart_liststore);
     GtkTreeModel *stats_model = GTK_TREE_MODEL(gui->stats_liststore);
     guint n = gtk_tree_model_iter_n_children(stats_model, NULL);
-    double *hues = create_n_hues(n, TRUE);
+    gdouble hues[n];
+    create_n_hues(n, TRUE, hues);
 
     guint i = 0;
     GtkTreeIter iter;
@@ -105,7 +106,6 @@ static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
     }
 
     gtk_widget_queue_draw(gui->chart_drawing_area);
-    free(hues);
 }
 
 static void tracer_gui_finish_trace(TracerGui *gui) {

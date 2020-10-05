@@ -6,6 +6,6 @@
 // h: 0-360
 // s: 0-1
 // v: 0-1
-GdkRGBA hsv_to_rgb(double h, double s, double b);
+GdkRGBA hsv_to_rgb(gdouble h, gdouble s, gdouble b);
 
-double *create_n_hues(guint n, gboolean shuffle);
+void create_n_hues(guint n, gboolean shuffle, gdouble *output);
