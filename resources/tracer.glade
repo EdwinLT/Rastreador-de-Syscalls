@@ -171,7 +171,6 @@
             <child>
               <object class="GtkButtonBox" id="proc_control_box">
                 <property name="visible">True</property>
-                <property name="sensitive">False</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
                 <property name="homogeneous">True</property>
@@ -180,6 +179,7 @@
                   <object class="GtkButton" id="next_syscall_button">
                     <property name="label">gtk-media-next</property>
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="can_default">True</property>
                     <property name="receives_default">True</property>
@@ -196,6 +196,7 @@
                   <object class="GtkButton" id="stop_button">
                     <property name="label">gtk-stop</property>
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="use_stock">True</property>

@@ -8,18 +8,16 @@
 #include <math.h>
 #include <gtk/gtk.h>
 
-#define DEBUG_PRINT printf("%s, %d\n", __FILE__, __LINE__)
-
 typedef struct TracerGui {
     Tracer *tracer;
 
     GtkWindow *main_window;
     GtkBox *input_box;
-    GtkButtonBox *proc_control_box;
     GtkEntry *command_entry;
     GtkComboBox *mode_combobox;
     GtkButton *start_button;
     GtkButton *next_syscall_button;
+    GtkButton *stop_button;
     GtkTreeView *log_treeview;
     GtkTreeView *stats_treeview;
     GtkTreeView *chart_legend;
@@ -71,8 +69,6 @@ static void tracer_gui_log_syscall(TracerGui *gui, SyscallInfo *syscall) {
             -1
         );
     }
-
-    gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), TRUE);
 }
 
 static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
@@ -112,7 +108,8 @@ static void tracer_gui_set_pie_chart_data(TracerGui *gui) {
 }
 
 static void tracer_gui_finish_trace(TracerGui *gui) {
-    gtk_widget_set_sensitive(GTK_WIDGET(gui->proc_control_box), FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(gui->stop_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), TRUE);
     gtk_widget_grab_default(GTK_WIDGET(gui->start_button));
     tracer_gui_set_pie_chart_data(gui);
@@ -140,9 +137,9 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
             gtk_list_store_clear(gui->log_liststore);
             gtk_list_store_clear(gui->stats_liststore);
             gtk_list_store_clear(gui->chart_liststore);
-            gtk_widget_set_visible(GTK_WIDGET(gui->next_syscall_button), !continuous);
+            gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
             gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(gui->proc_control_box), TRUE);
+            gtk_widget_set_sensitive(GTK_WIDGET(gui->stop_button), TRUE);
             gtk_widget_grab_default(GTK_WIDGET(gui->next_syscall_button));
         }
 
@@ -157,7 +154,7 @@ void on_stop_button_clicked(GtkButton *btn, gpointer data) {
 
 void on_next_syscall_button_clicked(GtkButton *btn, gpointer data) {
     TracerGui *gui = data;
-    tracer_trace_next(gui->tracer);
+    tracer_resume_trace(gui->tracer);
     gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
 }
 
@@ -268,6 +265,8 @@ static gboolean refresh_gui_source_func(gpointer data) {
             switch (trace->type) {
                 case TRACEE_SYSCALL:
                     tracer_gui_log_syscall(gui, &trace->syscall);
+                    gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), 
+                                             tracer_is_paused(gui->tracer));
                     break;
                 case TRACEE_EXIT:
                     printf("Exit status: %d\n", trace->exit_status);
@@ -291,11 +290,11 @@ static void tracer_gui_init_widgets(TracerGui *gui) {
 
     GUI_BIND_OBJECT(gui, builder, GTK_WINDOW, main_window);
     GUI_BIND_OBJECT(gui, builder, GTK_BOX, input_box);
-    GUI_BIND_OBJECT(gui, builder, GTK_BUTTON_BOX, proc_control_box);
     GUI_BIND_OBJECT(gui, builder, GTK_ENTRY, command_entry);
     GUI_BIND_OBJECT(gui, builder, GTK_COMBO_BOX, mode_combobox);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, start_button);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, next_syscall_button);
+    GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, stop_button);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, log_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, stats_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, chart_legend);

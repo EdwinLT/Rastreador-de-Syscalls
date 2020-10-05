@@ -31,10 +31,9 @@ typedef struct TraceParams {
 } TraceParams;
 
 
-static void tracer_set_flag(Tracer *tracer, TracerFlag flag) {
+static void tracer_atomic_set_flag(Tracer *tracer, TracerFlag flag) {
     g_mutex_lock(&tracer->lock);
     tracer->flag = flag;
-    g_cond_signal(&tracer->cond);
     g_mutex_unlock(&tracer->lock);
 }
 
@@ -91,7 +90,7 @@ static void worker_thread(gpointer data, gpointer user_data) {
     tracer_clear_result_queue(tracer);
     pid_t child = start_tracee(params->args[0], params->args);
     if (child > 0) {
-        tracer_set_flag(tracer, CONTINUE_FLAG);
+        tracer_atomic_set_flag(tracer, CONTINUE_FLAG);
 
         SyscallInfo syscall;
         ptrace(PTRACE_SYSCALL, child, 0, 0);
@@ -122,7 +121,7 @@ static void worker_thread(gpointer data, gpointer user_data) {
                         syscall.has_retval = TRUE;
                         tracer_queue_syscall(tracer, &syscall);
                         if (!params->continuous)
-                            tracer_set_flag(tracer, PAUSE_FLAG);
+                            tracer_atomic_set_flag(tracer, PAUSE_FLAG);
                         break;
                     case PTRACE_SYSCALL_INFO_SECCOMP:
                         syscall.number = sc_info.seccomp.nr;
@@ -132,7 +131,7 @@ static void worker_thread(gpointer data, gpointer user_data) {
                         syscall.has_retval = TRUE;
                         tracer_queue_syscall(tracer, &syscall);
                         if (!params->continuous)
-                            tracer_set_flag(tracer, PAUSE_FLAG);
+                            tracer_atomic_set_flag(tracer, PAUSE_FLAG);
                         break;
                 }
             }
@@ -167,6 +166,7 @@ Tracer *tracer_new() {
     Tracer *tracer = g_malloc(sizeof(Tracer));
     tracer->worker_thread_pool = g_thread_pool_new(worker_thread, tracer, 1, TRUE, NULL);
     tracer->result_queue = g_async_queue_new_full(g_free);
+    tracer->flag = CONTINUE_FLAG;
     g_mutex_init(&tracer->lock);
     g_cond_init(&tracer->cond);
     return tracer;
@@ -182,7 +182,10 @@ void tracer_free(Tracer *tracer) {
 }
 
 void tracer_kill_child_proc(Tracer *tracer) {
-    tracer_set_flag(tracer, KILL_FLAG);
+    g_mutex_lock(&tracer->lock);
+    tracer->flag = KILL_FLAG;
+    g_cond_signal(&tracer->cond);
+    g_mutex_unlock(&tracer->lock);
 }
 
 TraceResult *tracer_pop_queued_result(Tracer *tracer) {
@@ -209,6 +212,15 @@ gboolean tracer_start_trace_async(Tracer *tracer, gchar **args, gboolean continu
     return g_thread_pool_push(tracer->worker_thread_pool, params, NULL);
 }
 
-void tracer_trace_next(Tracer *tracer) {
-    tracer_set_flag(tracer, CONTINUE_FLAG);
+void tracer_resume_trace(Tracer *tracer) {
+    g_mutex_lock(&tracer->lock);
+    if (tracer->flag == PAUSE_FLAG) {
+        tracer->flag = CONTINUE_FLAG;
+        g_cond_signal(&tracer->cond);
+    }
+    g_mutex_unlock(&tracer->lock);
+}
+
+gboolean tracer_is_paused(Tracer *tracer) {
+    return (tracer->flag == PAUSE_FLAG);
 }
