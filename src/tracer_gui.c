@@ -116,6 +116,20 @@ static void tracer_gui_finish_trace(TracerGui *gui) {
     tracer_gui_set_pie_chart_data(gui);
 }
 
+static void tracer_gui_start_trace(TracerGui *gui, gchar **argv, gboolean continuous) {
+    if (tracer_start_trace_async(gui->tracer, argv, continuous)) {
+        gui->syscall_counter = 0UL;
+        gtk_list_store_clear(gui->log_liststore);
+        gtk_list_store_clear(gui->stats_liststore);
+        gtk_list_store_clear(gui->chart_liststore);
+        gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(gui->stop_button), TRUE);
+        gtk_notebook_set_current_page(gui->stats_notebook, 0);
+        gtk_widget_grab_default(GTK_WIDGET(gui->next_syscall_button));
+    }
+}
+
 
 void on_main_window_destroy(GtkWidget *widget, gpointer data) {
     TracerGui *gui = data;
@@ -132,19 +146,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
     if (g_shell_parse_argv(cmd, &argc, &argv, NULL)) {
         const char *mode_id = gtk_combo_box_get_active_id(gui->mode_combobox);
         gboolean continuous = (g_strcmp0(mode_id, "CONTINUOUS") == 0);
-
-        if (tracer_start_trace_async(gui->tracer, argv, continuous)) {
-            gui->syscall_counter = 0UL;
-            gtk_list_store_clear(gui->log_liststore);
-            gtk_list_store_clear(gui->stats_liststore);
-            gtk_list_store_clear(gui->chart_liststore);
-            gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(gui->stop_button), TRUE);
-            gtk_notebook_set_current_page(gui->stats_notebook, 0);
-            gtk_widget_grab_default(GTK_WIDGET(gui->next_syscall_button));
-        }
-
+        tracer_gui_start_trace(gui, argv, continuous);
         g_strfreev(argv);
     }
 }
@@ -319,6 +321,10 @@ void tracer_gui_main(int argc, char **argv) {
     TracerGui *gui = g_malloc(sizeof(TracerGui));
     gui->tracer = tracer_new();
     tracer_gui_init_widgets(gui);
+
+    if (argc > 0) {
+        tracer_gui_start_trace(gui, argv, TRUE);
+    }
 
     gtk_main();
 

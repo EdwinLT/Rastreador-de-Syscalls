@@ -21,6 +21,11 @@ $ ./rastreador
 ![Image](screenshots/rastreador.png)
 
 Ingrese un comando en el campo de texto en la parte superior de la ventana y presione el botón de play para ejecutarlo.
+Alternativamente, puede ingresar el comando directamente desde la terminal.
+```
+$ ./rastreador [comando]
+```
+
 Con el combobox a la izquierda puede escoger si quiere correr el programa en modo continuo o pausado.
 
 Si se ejecuta en modo pausado, utilice el botón 'Next' para continuar la ejecución después de cada system call.
