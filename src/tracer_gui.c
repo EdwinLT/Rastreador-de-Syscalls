@@ -269,11 +269,7 @@ static gboolean refresh_gui_source_func(gpointer data) {
                                              tracer_is_paused(gui->tracer));
                     break;
                 case TRACEE_EXIT:
-                    printf("Exit status: %d\n", trace->exit_status);
-                    tracer_gui_finish_trace(gui);
-                    break;
                 case TRACEE_TERMINATED:
-                    printf("Stop signal: %d\n", trace->term_signal);
                     tracer_gui_finish_trace(gui);
                     break;
             }
