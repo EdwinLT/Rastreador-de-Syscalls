@@ -44,3 +44,6 @@ que se encuentra debajo de la tabla para mostrar los datos en un gráfico de pas
 
 ## Características no implementadas
 - Descripción de los system calls
+
+## Otras notas
+- Solo se ha probado en arquitectura x86_64
