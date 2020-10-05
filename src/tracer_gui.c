@@ -18,6 +18,7 @@ typedef struct TracerGui {
     GtkButton *start_button;
     GtkButton *next_syscall_button;
     GtkButton *stop_button;
+    GtkNotebook *stats_notebook;
     GtkTreeView *log_treeview;
     GtkTreeView *stats_treeview;
     GtkTreeView *chart_legend;
@@ -140,6 +141,7 @@ void on_start_button_clicked(GtkButton *btn, gpointer data) {
             gtk_widget_set_sensitive(GTK_WIDGET(gui->next_syscall_button), FALSE);
             gtk_widget_set_sensitive(GTK_WIDGET(gui->input_box), FALSE);
             gtk_widget_set_sensitive(GTK_WIDGET(gui->stop_button), TRUE);
+            gtk_notebook_set_current_page(gui->stats_notebook, 0);
             gtk_widget_grab_default(GTK_WIDGET(gui->next_syscall_button));
         }
 
@@ -291,6 +293,7 @@ static void tracer_gui_init_widgets(TracerGui *gui) {
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, start_button);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, next_syscall_button);
     GUI_BIND_OBJECT(gui, builder, GTK_BUTTON, stop_button);
+    GUI_BIND_OBJECT(gui, builder, GTK_NOTEBOOK, stats_notebook);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, log_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, stats_treeview);
     GUI_BIND_OBJECT(gui, builder, GTK_TREE_VIEW, chart_legend);
