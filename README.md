@@ -1,4 +1,4 @@
-# Rastreador-de-Syscalls
+# Rastreador de Syscalls
 Proyecto 0 de IC6600 Principios de Sistemas Operativos
 
 Un rastreador de system calls para Linux escrito en C y con interfaz gráfica de Gtk.
