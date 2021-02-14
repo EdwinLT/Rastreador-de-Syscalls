@@ -96,7 +96,7 @@ static void worker_thread(gpointer data, gpointer user_data) {
         ptrace(PTRACE_SYSCALL, child, 0, 0);
         while (TRUE) {
             int status;
-            if (waitpid(child, &status, WNOHANG) == 0)
+            if (waitpid(child, &status, 0) == 0)
                 continue;
             if (WIFEXITED(status)) {
                 tracer_queue_syscall(tracer, &syscall);
