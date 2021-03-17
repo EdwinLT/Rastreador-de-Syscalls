@@ -1,18 +1,19 @@
 TARGET:=rastreador
 SRCDIR:=src
 
-SRCS:=$(wildcard $(SRCDIR)/*.c)
-BUILDDIR:=build
-OBJS:=$(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
-DEPS:=$(OBJS:%.o=%.d)
+CC:=gcc
+CFLAGS:=-rdynamic -Iinclude/ `pkg-config --cflags gtk+-3.0` -lm
+LDFLAGS:=-Iinclude/ `pkg-config --libs gtk+-3.0` -lm
 
 GRESOURCE_XML:=resources/rastreador.gresources.xml
 GRESOURCE_C:=$(BUILDDIR)/resources.c
 RESOURCES:=$(filter-out $(GRESOURCE_XML), $(wildcard resources/*))
 
-CC:=gcc
-LIBS:=-Iinclude/ `pkg-config --cflags --libs gtk+-3.0` -lm
-CFLAGS:=-rdynamic
+SRCS:=$(wildcard $(SRCDIR)/*.c)
+BUILDDIR:=build
+OBJS:=$(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+DEPS:=$(OBJS:%.o=%.d)
+
 
 .PHONY: all run
 all: $(TARGET)
@@ -21,14 +22,14 @@ run: all
 	@./$(TARGET)
 
 $(TARGET): $(OBJS) $(GRESOURCE_C)
-	$(CC) $^ -o $@ $(LIBS) $(CFLAGS)
+	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 $(BUILDDIR)/:
 	mkdir -p $@
 
 $(OBJS): | $(BUILDDIR)/
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) -c -MMD -MP $< -o $@ $(LIBS) $(CFLAGS)
+	$(CC) -c -MMD -MP $< -o $@ -Iinclude/ $(CFLAGS)
 
 $(GRESOURCE_C): | $(BUILDDIR)
 $(GRESOURCE_C): $(GRESOURCE_XML) $(RESOURCES)
